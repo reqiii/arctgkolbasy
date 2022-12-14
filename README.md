@@ -10,6 +10,6 @@
     
     ```gradle update -DPOSTGRES_USER=postgres -DPOSTGRES_PASSWORD=mysecretpassword -DPOSTGRES_URL=jdbc:postgresql://localhost:5432/arctgkolbasy_db```
 
-3. Enjoy
+3. Run backend with your bot token
 
-   ```gradle bootRun```
+   ```gradle bootRun -DBOT_TOKEN=???```
