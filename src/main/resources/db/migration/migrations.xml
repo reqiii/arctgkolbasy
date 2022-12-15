@@ -8,4 +8,8 @@
         <sqlFile path="src/main/resources/db/migration/changesets/1-create-tables.sql"/>
     </changeSet>
 
+    <changeSet id="2-insert-users-role.sql" author="rales">
+        <sqlFile path="src/main/resources/db/migration/changesets/2-insert-users-role.sql"/>
+    </changeSet>
+
 </databaseChangeLog>

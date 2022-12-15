@@ -23,7 +23,7 @@ create table if not exists consumer (
 
 create table if not exists roles (
   role_id serial primary key,
-  role_name text
+  role_name text unique not null
 );
 
 create table if not exists users_to_role (
