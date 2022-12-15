@@ -14,8 +14,6 @@ abstract class SecuredHandler(
 ) : Handler {
     private val currentUserHolder: ThreadLocal<User?> = ThreadLocal()
 
-    abstract fun getCommandName(): String
-
     abstract fun checkUpdateInternal(update: Update): Boolean
 
     abstract fun handleUpdateInternal(user: User, bot: Bot, update: Update)
@@ -51,6 +49,7 @@ abstract class SecuredHandler(
     protected fun getOrCreateUser(tgApiUser: TgApiUser): User {
         return User(
             id = -1,
+            telegramId = tgApiUser.id,
             isBot = false,
             firstName = tgApiUser.firstName,
             lastName = tgApiUser.lastName,

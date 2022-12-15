@@ -7,6 +7,7 @@ import java.util.function.Predicate
 abstract class SecuredCommand(
     securityCheck: Predicate<User>,
 ) : SecuredHandler(securityCheck) {
+    abstract fun getCommandName(): String
     override fun checkUpdateInternal(update: Update): Boolean = update
         .message
         ?.text
