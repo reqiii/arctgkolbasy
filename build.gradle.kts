@@ -43,9 +43,9 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-val liquibaseUrl: String = System.getenv("POSTGRES_URL") ?: "jdbc:postgresql://localhost:5432/arctgkolbasy_db"
-val liquibasePwd: String = System.getenv("POSTGRES_USER") ?: "mysecretpassword"
-val liquibaseUser: String = System.getenv("POSTGRES_PASSWORD") ?: "postgres"
+val liquibaseUrl: String = System.getProperty("POSTGRES_URL") ?: "jdbc:postgresql://localhost:5432/arctgkolbasy_db"
+val liquibaseUser: String = System.getProperty("POSTGRES_USER") ?: "postgres"
+val liquibasePwd: String = System.getProperty("POSTGRES_PASSWORD") ?: "mysecretpassword"
 
 liquibase {
     activities.register("main") {

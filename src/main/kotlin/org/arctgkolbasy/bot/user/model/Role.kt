@@ -5,7 +5,7 @@ import org.arctgkolbasy.bot.user.UserRoles
 
 @Entity
 @Table(name = "roles")
-class Roles (
+class Role (
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "role_id", insertable = false)
@@ -15,4 +15,10 @@ class Roles (
     var roleName: UserRoles,
     @ManyToMany(mappedBy = "roles")
     var users: List<User>
-)
+) {
+    constructor() : this(
+        -1,
+        UserRoles.GUEST,
+        listOf(),
+    )
+}

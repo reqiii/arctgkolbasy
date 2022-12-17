@@ -16,7 +16,7 @@ create table if not exists products (
   buyer_id integer not null references users (user_id)
 );
 
-create table if not exists consumer (
+create table if not exists consumers (
   product_id serial primary key,
   consumer_id integer references users (user_id),
   consumed_amount integer
@@ -27,7 +27,7 @@ create table if not exists roles (
   role_name text unique not null
 );
 
-create table if not exists users_to_role (
+create table if not exists users_to_roles (
   user_id integer not null references users (user_id),
   role_id integer not null references roles (role_id),
   primary key (user_id, role_id)

@@ -21,14 +21,14 @@ class User(
     var username: String? = null,
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-        name = "users_to_role",
+        name = "users_to_roles",
         joinColumns = [JoinColumn(name = "user_id")],
         inverseJoinColumns = [JoinColumn(name = "role_id")]
     )
-    var roles: Set<Roles>,
+    var roles: Set<Role>,
 ) {
-    private constructor() : this(
-        id = 0,
+    constructor() : this(
+        id = -1,
         telegramId = 0,
         isBot = false,
         firstName = "",
