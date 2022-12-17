@@ -1,6 +1,6 @@
 package org.arctgkolbasy.bot.user
 
-data class User (
+data class User(
     val id: Long,
     val telegramId: Long,
     var isBot: Boolean,
