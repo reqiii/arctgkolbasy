@@ -3,9 +3,9 @@ package org.arctgkolbasy.bot.user
 data class User(
     val id: Long,
     val telegramId: Long,
-    val isBot: Boolean,
-    val firstName: String,
-    val lastName: String? = null,
-    val username: String? = null,
-    val roles: List<UserRoles> = listOf(UserRoles.USER),
+    var isBot: Boolean,
+    var firstName: String,
+    var lastName: String? = null,
+    var username: String? = null,
+    var roles: Set<UserRoles>,
 )

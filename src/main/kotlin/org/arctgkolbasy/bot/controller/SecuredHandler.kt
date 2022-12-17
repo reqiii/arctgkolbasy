@@ -4,13 +4,12 @@ import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.dispatcher.handlers.Handler
 import com.github.kotlintelegrambot.entities.Update
 import org.arctgkolbasy.bot.user.User
-import org.arctgkolbasy.bot.user.UserRoles
-import java.lang.IllegalStateException
+import org.arctgkolbasy.bot.user.UserService
 import java.util.function.Predicate
-import com.github.kotlintelegrambot.entities.User as TgApiUser
 
 abstract class SecuredHandler(
     val securityCheck: Predicate<User>,
+    val userService: UserService,
 ) : Handler {
     private val currentUserHolder: ThreadLocal<User?> = ThreadLocal()
 
@@ -23,7 +22,7 @@ abstract class SecuredHandler(
     protected fun checkSecurityAndSetUser(update: Update): Boolean {
         val tgApiUser = update.message?.from
         if (tgApiUser != null) {
-            val currentUser = getOrCreateUser(tgApiUser)
+            val currentUser = userService.getOrCreateUser(tgApiUser)
             if (securityCheck.test(currentUser)) {
                 currentUserHolder.set(currentUser)
                 return true
@@ -40,25 +39,11 @@ abstract class SecuredHandler(
                 bot = bot,
                 update = update
             )
+        } catch (e: Exception) {
+            e.printStackTrace()
         } finally {
             update.consume()
             currentUserHolder.set(null)
         }
-    }
-
-    protected fun getOrCreateUser(tgApiUser: TgApiUser): User {
-        return User(
-            id = -1,
-            telegramId = tgApiUser.id,
-            isBot = false,
-            firstName = tgApiUser.firstName,
-            lastName = tgApiUser.lastName,
-            username = tgApiUser.username,
-            roles = if (tgApiUser.username == "problem_hunter") {
-                listOf(UserRoles.ADMIN, UserRoles.USER)
-            } else {
-                listOf(UserRoles.USER)
-            },
-        )
     }
 }

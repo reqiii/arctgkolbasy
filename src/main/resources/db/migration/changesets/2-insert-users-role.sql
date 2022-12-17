@@ -1,14 +1,14 @@
 insert into roles values (
 default,
-'administrator'
+'USER'
 ) on conflict (role_name) do nothing;
 
 insert into roles values (
 default,
-'user'
+'ADMIN'
 ) on conflict (role_name) do nothing;
 
 insert into roles values (
 default,
-'guest'
+'GUEST'
 ) on conflict (role_name) do nothing;
