@@ -9,8 +9,12 @@ import org.springframework.stereotype.Controller
 
 @Controller
 class HelpCommand(
-    val securedCommands: List<SecuredCommand>, userService: UserService,
-) : SecuredCommand({ true }, userService) {
+    val securedCommands: List<SecuredCommand>,
+    userService: UserService,
+) : SecuredCommand(
+    { true },
+    userService
+) {
     override fun getCommandName(): String = "help"
     override fun handleUpdateInternal(user: User, bot: Bot, update: Update) {
         bot.sendMessage(

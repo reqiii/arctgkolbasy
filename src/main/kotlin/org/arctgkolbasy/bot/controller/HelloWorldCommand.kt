@@ -8,9 +8,17 @@ import org.arctgkolbasy.bot.user.UserService
 import org.springframework.stereotype.Controller
 
 @Controller
-class HelloWorldCommand(userService: UserService) : SecuredCommand({ true }, userService) {
+class HelloWorldCommand(
+    userService: UserService
+) : SecuredCommand(
+    { true },
+    userService
+) {
     override fun getCommandName() = "hello"
     override fun handleUpdateInternal(user: User, bot: Bot, update: Update) {
-        bot.sendMessage(chatId = ChatId.fromId(update.message!!.chat.id), text = "Hi there!")
+        bot.sendMessage(
+            chatId = ChatId.fromId(update.message!!.chat.id),
+            text = "Hi there!"
+        )
     }
 }

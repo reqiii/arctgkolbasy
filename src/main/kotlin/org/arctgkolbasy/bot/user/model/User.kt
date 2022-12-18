@@ -25,13 +25,13 @@ class User(
         joinColumns = [JoinColumn(name = "user_id")],
         inverseJoinColumns = [JoinColumn(name = "role_id")]
     )
-    var roles: Set<Role>,
+    var roles: MutableSet<Role>,
 ) {
     constructor() : this(
         id = -1,
         telegramId = 0,
         isBot = false,
         firstName = "",
-        roles = setOf(),
+        roles = mutableSetOf(),
     )
 }
