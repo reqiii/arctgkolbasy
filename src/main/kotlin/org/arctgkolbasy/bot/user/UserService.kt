@@ -2,6 +2,7 @@ package org.arctgkolbasy.bot.user
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.lang.IllegalArgumentException
 import com.github.kotlintelegrambot.entities.User as TgApiUser
 import org.arctgkolbasy.bot.user.model.User as DbUser
 
@@ -50,5 +51,11 @@ class UserService(
     @Transactional
     fun updateSession(id: Long, sessionKey: String?, session: String?) {
         userRepository.updateSession(id, sessionKey, session)
+    }
+
+    @Transactional
+    fun addUserRoles(username: String, role: UserRoles) {
+        val user = userRepository.findByUsername(username) ?: throw IllegalArgumentException("Пользователь не найден!")
+        user.roles.add(roleRepository.findByRoleName(role) ?: throw IllegalArgumentException("Роль не найдена!"))
     }
 }

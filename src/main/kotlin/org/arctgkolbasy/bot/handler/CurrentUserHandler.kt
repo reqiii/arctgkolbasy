@@ -38,7 +38,14 @@ class CurrentUserHandler(
     }
 
     private fun SecuredCommand.handleUpdateAndClearSessionIfNeeded(bot: Bot, update: Update, user: User) {
-        this.handleUpdate(bot, update)
+        try {
+            this.handleUpdate(bot, update)
+        } catch (exception: Exception) {
+            bot.sendMessage(
+                chatId = update.chatIdUnsafe(),
+                text = "Ошибка: ${exception.message}"
+            )
+        }
         if (this.isStateless) {
             user.clearSession()
         }

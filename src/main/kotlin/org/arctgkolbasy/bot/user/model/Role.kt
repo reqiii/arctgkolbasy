@@ -19,6 +19,6 @@ class Role (
     constructor() : this(
         -1,
         UserRoles.GUEST,
-        listOf(),
+        mutableListOf(),
     )
 }
