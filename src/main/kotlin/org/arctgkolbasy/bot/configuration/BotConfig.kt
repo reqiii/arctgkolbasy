@@ -2,15 +2,15 @@ package org.arctgkolbasy.bot.configuration
 
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
-import com.github.kotlintelegrambot.dispatcher.handlers.Handler
 import com.github.kotlintelegrambot.dispatcher.text
+import org.arctgkolbasy.bot.handler.CurrentUserHandler
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
 class BotConfig(
-    val handlers: List<Handler>,
+    val currentUserHandler: CurrentUserHandler,
 ) {
 
     @Value("\${telegram.bot.token}")
@@ -20,8 +20,8 @@ class BotConfig(
     fun bot() = bot {
         token = botToken
         dispatch {
-            handlers.forEach(this::addHandler)
-            text { println(message.text) }
+            text { println("recieved message '${message.text}' from user '${message.from}'") }
+            addHandler(currentUserHandler)
         }
     }
 }
