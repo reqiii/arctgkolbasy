@@ -13,20 +13,34 @@ class CurrentUserHandler(
     val userService: UserService,
     @Qualifier("currentUserHolder")
     val currentUserHolder: ThreadLocal<User?>,
-    val handlers: List<Handler>
+    val commands: List<SecuredCommand>,
 ) : Handler {
-    override fun checkUpdate(update: Update): Boolean = true
+    override fun checkUpdate(update: Update): Boolean = update.message?.from != null
 
     override fun handleUpdate(bot: Bot, update: Update) {
-        val user = update.message?.from?.let { userService.getOrCreateUser(it) }
+        val user = userService.getOrCreateUser(update.message!!.from!!)
         currentUserHolder.set(user)
-        handlers.filter { it.checkUpdate(update) }
-            .forEach {
-                if (update.consumed) {
-                    return@forEach
+        val command = commands.singleOrNull {
+            update.message?.text?.startsWith("/${it.getCommandName()}") == true
+        }
+        if (command != null) {
+            command.handleUpdateAndClearSessionIfNeeded(bot, update, user)
+        } else {
+            commands.filter { it.checkUpdate(update) }
+                .forEach {
+                    if (update.consumed) {
+                        return@forEach
+                    }
+                    it.handleUpdateAndClearSessionIfNeeded(bot, update, user)
                 }
-                it.handleUpdate(bot, update)
-            }
+        }
         currentUserHolder.set(null)
+    }
+
+    private fun SecuredCommand.handleUpdateAndClearSessionIfNeeded(bot: Bot, update: Update, user: User) {
+        this.handleUpdate(bot, update)
+        if (this.isStateless) {
+            user.clearSession()
+        }
     }
 }

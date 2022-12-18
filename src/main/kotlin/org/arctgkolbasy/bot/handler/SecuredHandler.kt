@@ -2,11 +2,13 @@ package org.arctgkolbasy.bot.handler
 
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.dispatcher.handlers.Handler
+import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.Update
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserService
 
 abstract class SecuredHandler(
+    val isStateless: Boolean,
     protected val userService: UserService,
     private val currentUserHolder: ThreadLocal<User?>,
     private val isTerminal: Boolean,
@@ -24,7 +26,7 @@ abstract class SecuredHandler(
     override fun handleUpdate(bot: Bot, update: Update) {
         try {
             handleUpdateInternal(
-                user = currentUserHolder.get() ?: throw IllegalStateException("insecure access"),
+                user = currentUserHolder.get() ?: throw IllegalStateException("Illegal access"),
                 bot = bot,
                 update = update
             )
@@ -34,7 +36,21 @@ abstract class SecuredHandler(
             if (isTerminal) {
                 update.consume()
             }
-            currentUserHolder.set(null)
         }
     }
+
+    fun User.clearSession() = updateSession(null, null)
+
+    fun User.updateSession(sessionKey: String?, session: String?) {
+        userService.updateSession(this.id, sessionKey, session)
+    }
 }
+
+fun Update.chatIdUnsafe(): ChatId = chatId()!!
+
+fun Update.chatId(): ChatId? {
+    val id = this.message?.chat?.id ?: return null
+    return ChatId.fromId(id)
+}
+
+fun Update.message(): String = this.message?.text?.trim() ?: ""

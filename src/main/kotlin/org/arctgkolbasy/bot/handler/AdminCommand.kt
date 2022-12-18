@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Controller
 
 @Controller
-class AdminHandler(
+class AdminCommand(
     userService: UserService,
     @Qualifier("currentUserHolder")
     currentUserHolder: ThreadLocal<User?>,
@@ -19,7 +19,7 @@ class AdminHandler(
     currentUserHolder = currentUserHolder,
 ) {
     override fun getCommandName() = "admin"
-    override fun checkUserAccess(user: User): Boolean  = user.roles.contains(UserRoles.ADMIN)
+    override fun checkUserAccess(user: User): Boolean = user.roles.contains(UserRoles.ADMIN)
     override fun handleUpdateInternal(user: User, bot: Bot, update: Update) {
         bot.sendMessage(
             chatId = ChatId.fromId(update.message!!.chat.id),

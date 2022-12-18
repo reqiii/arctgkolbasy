@@ -1,7 +1,6 @@
 package org.arctgkolbasy.bot.handler
 
 import com.github.kotlintelegrambot.Bot
-import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.Update
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserService
@@ -21,7 +20,7 @@ class HelpCommand(
     override fun checkUserAccess(user: User) = true
     override fun handleUpdateInternal(user: User, bot: Bot, update: Update) {
         bot.sendMessage(
-            ChatId.fromId(update.message!!.chat.id),
+            update.chatIdUnsafe(),
             listOf(getCommandName())
                 .plus(securedCommands
                     .filter { it.checkUserAccess(user) }

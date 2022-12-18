@@ -9,8 +9,7 @@ import org.arctgkolbasy.bot.user.model.User as DbUser
 class UserService(
     val userRepository: UserRepository,
     val roleRepository: RoleRepository,
-){
-
+) {
     @Transactional
     fun getOrCreateUser(tgApiUser: TgApiUser): User {
         var user = userRepository.findByTelegramId(tgApiUser.id)
@@ -30,17 +29,26 @@ class UserService(
                     roles = mutableSetOf(
                         roleRepository.findByRoleName(UserRoles.GUEST) ?: throw IllegalStateException("no role found"),
                     ),
+                    sessionKey = null,
+                    session = null,
                 )
             )
         }
         return User(
-            user.id,
-            user.telegramId,
-            user.isBot,
-            user.firstName,
-            user.lastName,
-            user.username,
-            user.roles.map { it.roleName }.toSet()
+            id = user.id,
+            telegramId = user.telegramId,
+            isBot = user.isBot,
+            firstName = user.firstName,
+            lastName = user.lastName,
+            username = user.username,
+            roles = user.roles.map { it.roleName }.toSet(),
+            sessionKey = user.sessionKey,
+            session = user.session,
         )
+    }
+
+    @Transactional
+    fun updateSession(id: Long, sessionKey: String?, session: String?) {
+        userRepository.updateSession(id, sessionKey, session)
     }
 }

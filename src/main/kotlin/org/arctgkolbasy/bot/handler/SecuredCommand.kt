@@ -10,17 +10,24 @@ abstract class SecuredCommand(
     @Qualifier("currentUserHolder")
     currentUserHolder: ThreadLocal<User?>,
     isTerminal: Boolean = true,
+    isStateless: Boolean = true,
 ) : SecuredHandler(
     userService = userService,
     currentUserHolder = currentUserHolder,
-    isTerminal = isTerminal
+    isTerminal = isTerminal,
+    isStateless = isStateless,
 ) {
     abstract fun getCommandName(): String
 
-    override fun checkUpdateInternal(update: Update, user: User): Boolean = update
+    protected open fun sessionCheck(sessionKey: String?, session: String?): Boolean = false
+
+    override fun checkUpdateInternal(update: Update, user: User): Boolean =
+        (messageStartsFromCommand(update) || sessionCheck(user.sessionKey, user.session)) && (checkUserAccess(user))
+
+    private fun messageStartsFromCommand(update: Update): Boolean = update
         .message
         ?.text
-        ?.startsWith("/${getCommandName()}")?.and(checkUserAccess(user))
+        ?.startsWith("/${getCommandName()}")
         ?: false
 
     abstract fun checkUserAccess(user: User): Boolean
