@@ -12,11 +12,14 @@ import org.springframework.stereotype.Controller
 class AdminHandler(
     userService: UserService
 ) : SecuredCommand(
-    { user -> user.roles.contains( UserRoles.ADMIN ) },
+    { user -> user.roles.contains(UserRoles.ADMIN) },
     userService
 ) {
     override fun getCommandName() = "admin"
     override fun handleUpdateInternal(user: User, bot: Bot, update: Update) {
-        bot.sendMessage(ChatId.fromId(update.message!!.chat.id), "привет, великий ${user.username}")
+        bot.sendMessage(
+            chatId = ChatId.fromId(update.message!!.chat.id),
+            text = "привет, великий ${user.username}"
+        )
     }
 }

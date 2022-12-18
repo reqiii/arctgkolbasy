@@ -21,13 +21,13 @@ class UserService(
         } else {
             user = userRepository.save(
                 DbUser(
-                    id = 0,
+                    id = -1,
                     telegramId = tgApiUser.id,
                     isBot = tgApiUser.isBot,
                     firstName = tgApiUser.firstName,
                     lastName = tgApiUser.lastName,
                     username = tgApiUser.username,
-                    roles = setOf(
+                    roles = mutableSetOf(
                         roleRepository.findByRoleName(UserRoles.GUEST) ?: throw IllegalStateException("no role found"),
                     ),
                 )
