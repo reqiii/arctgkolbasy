@@ -9,7 +9,8 @@ create table if not exists users (
 
 create table if not exists products (
   product_id serial primary key,
-  product_cost money not null,
+  name text not null,
+  cost money not null,
   initial_amount integer,
   current_amount integer,
   product_image text,

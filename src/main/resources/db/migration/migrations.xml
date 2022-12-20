@@ -12,4 +12,8 @@
         <sqlFile path="src/main/resources/db/migration/changesets/2-insert-users-role.sql"/>
     </changeSet>
 
+    <changeSet id="3-add-session-columns-for-users-table" author="rales">
+        <sqlFile path="src/main/resources/db/migration/changesets/3-add-session-columns-for-users-table.sql"/>
+    </changeSet>
+
 </databaseChangeLog>
