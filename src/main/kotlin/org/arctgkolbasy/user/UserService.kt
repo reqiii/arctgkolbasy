@@ -60,4 +60,10 @@ class UserService(
         val user = userRepository.findByUsername(username) ?: throw IllegalArgumentException("Пользователь не найден!")
         user.roles.add(roleRepository.findByRoleName(role) ?: throw IllegalArgumentException("Роль не найдена!"))
     }
+
+    @Transactional
+    fun deleteUserRoles(username: String, role: UserRoles) {
+        val user = userRepository.findByUsername(username) ?: throw IllegalArgumentException("Пользователь не найден!")
+        user.roles.remove(roleRepository.findByRoleName(role) ?: throw IllegalArgumentException("Роль не найдена!"))
+    }
 }
