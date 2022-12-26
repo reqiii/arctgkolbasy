@@ -37,7 +37,7 @@ class AddProductCommand(
     override fun handleUpdateInternal(user: User, bot: Bot, update: Update) = when (user.sessionKey) {
         AddProductStates.STEP_1_ENTER_NAME.step -> stepOneEnterName(update, bot, user)
         AddProductStates.STEP_2_ENTER_COST.step -> stepTwoEnterCost(update, bot, user)
-        AddProductStates.STEP_3_ENTER_AMOUNT.step -> stepThreeEnterAmound(update, bot, user)
+        AddProductStates.STEP_3_ENTER_AMOUNT.step -> stepThreeEnterAmount(update, bot, user)
         AddProductStates.STEP_4_ENTER_IMAGE.step -> stepFourEnterImage(update, bot, user)
         else -> stepZero(bot, update, user)
     }
@@ -53,11 +53,7 @@ class AddProductCommand(
     private fun stepOneEnterName(update: Update, bot: Bot, user: User) {
         val name = update.message()
         if (name.startsWith("/")) {
-            bot.sendMessage(
-                chatId = update.chatIdUnsafe(),
-                text = "Неправильное название. Отправь текстовое сообщение с названием"
-            )
-            return
+            throw IllegalArgumentException("Неправильное название. Отправь текстовое сообщение с названием")
         }
         bot.sendMessage(update.chatIdUnsafe(), "Цена:")
         user.updateSession(
@@ -70,20 +66,11 @@ class AddProductCommand(
         val cost = try {
             val cost = update.message()
             if (cost.isEmpty()) {
-                bot.sendMessage(
-                    chatId = update.chatIdUnsafe(),
-                    text = "Неправильная цена. Отправь текстовое сообщение с ценой"
-                )
-                return
+                throw IllegalArgumentException("Неправильная цена. Отправь текстовое сообщение с ценой")
             }
             BigDecimal(cost)
         } catch (e: Exception) {
-            e.printStackTrace()
-            bot.sendMessage(
-                chatId = update.chatIdUnsafe(),
-                text = "Неправильная цена. Отправь текстовое сообщение с ценой"
-            )
-            return
+            throw IllegalArgumentException("Неправильная цена. Отправь текстовое сообщение с ценой", e)
         }
         val addProductSession = objectMapper.readValue<AddProductSession>(user.session!!).copy(cost = cost)
         bot.sendMessage(chatId = update.chatIdUnsafe(), text = "Количество:")
@@ -93,16 +80,11 @@ class AddProductCommand(
         )
     }
 
-    private fun stepThreeEnterAmound(update: Update, bot: Bot, user: User) {
+    private fun stepThreeEnterAmount(update: Update, bot: Bot, user: User) {
         val initialAmount = try {
             update.message().toInt()
         } catch (e: Exception) {
-            e.printStackTrace()
-            bot.sendMessage(
-                chatId = update.chatIdUnsafe(),
-                text = "Неправильное количество. Отправь текстовое сообщение с количеством"
-            )
-            return
+            throw IllegalArgumentException("Неправильное количество. Отправь текстовое сообщение с количеством", e)
         }
         val addProductSession = objectMapper.readValue<AddProductSession>(user.session!!)
             .copy(initialAmount = initialAmount)
@@ -115,13 +97,7 @@ class AddProductCommand(
 
     private fun stepFourEnterImage(update: Update, bot: Bot, user: User) {
         val image = update.message?.photo?.maxByOrNull { it.height + it.width }?.fileId
-        if (image == null) {
-            bot.sendMessage(
-                chatId = update.chatIdUnsafe(),
-                text = "Неправильное фото. Отправь фото чека или товара"
-            )
-            return
-        }
+            ?: throw IllegalArgumentException("Неправильное фото. Отправь фото чека или товара")
         val addProductSession = objectMapper.readValue<AddProductSession>(user.session!!).copy(image = image)
         val product = productRepository.save(
             Product(

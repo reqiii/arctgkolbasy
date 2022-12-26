@@ -10,6 +10,9 @@ import org.springframework.stereotype.Repository
 @Repository
 interface UserRepository : CrudRepository<User, Long> {
     fun findByTelegramId(id: Long): User?
+
+    fun findByUsername(username: String): User?
+
     @Modifying
     @Query("update User u set u.sessionKey = :sessionKey, u.session = :session where u.id = :id")
     fun updateSession(
