@@ -5,6 +5,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.Update
 import org.arctgkolbasy.bot.user.*
+import org.arctgkolbasy.user.UserRepository
+import org.arctgkolbasy.user.UserService
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Controller
 

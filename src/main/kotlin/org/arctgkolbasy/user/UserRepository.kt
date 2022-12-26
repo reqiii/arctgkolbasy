@@ -1,6 +1,5 @@
-package org.arctgkolbasy.bot.user
+package org.arctgkolbasy.user
 
-import org.arctgkolbasy.bot.user.model.User
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
