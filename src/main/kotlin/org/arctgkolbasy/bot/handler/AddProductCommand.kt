@@ -5,12 +5,12 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.Update
 import org.arctgkolbasy.bot.handler.AddProductCommand.Companion.ADD_PRODUCT_COMMAND
-import org.arctgkolbasy.bot.product.Product
-import org.arctgkolbasy.bot.product.ProductRepository
+import org.arctgkolbasy.product.Product
+import org.arctgkolbasy.product.ProductRepository
 import org.arctgkolbasy.bot.user.User
-import org.arctgkolbasy.bot.user.UserRepository
+import org.arctgkolbasy.user.UserRepository
 import org.arctgkolbasy.bot.user.UserRoles
-import org.arctgkolbasy.bot.user.UserService
+import org.arctgkolbasy.user.UserService
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.math.BigDecimal

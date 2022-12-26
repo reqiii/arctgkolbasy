@@ -1,10 +1,12 @@
-package org.arctgkolbasy.bot.user
+package org.arctgkolbasy.user
 
+import org.arctgkolbasy.bot.user.User
+import org.arctgkolbasy.bot.user.UserRoles
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.lang.IllegalArgumentException
 import com.github.kotlintelegrambot.entities.User as TgApiUser
-import org.arctgkolbasy.bot.user.model.User as DbUser
+import org.arctgkolbasy.user.User as DbUser
 
 @Service
 class UserService(

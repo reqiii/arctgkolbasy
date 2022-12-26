@@ -18,9 +18,10 @@ create table if not exists products (
 );
 
 create table if not exists consumers (
-  product_id serial primary key,
+  product_id integer references products (product_id),
   consumer_id integer references users (user_id),
-  consumed_amount integer
+  consumed_amount integer,
+  primary key (product_id, consumer_id)
 );
 
 create table if not exists roles (

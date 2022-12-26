@@ -1,4 +1,4 @@
-package org.arctgkolbasy.bot.user.model
+package org.arctgkolbasy.user
 
 import jakarta.persistence.*
 import org.arctgkolbasy.bot.user.UserRoles

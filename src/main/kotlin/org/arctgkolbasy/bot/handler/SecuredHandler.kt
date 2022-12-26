@@ -5,7 +5,7 @@ import com.github.kotlintelegrambot.dispatcher.handlers.Handler
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.Update
 import org.arctgkolbasy.bot.user.User
-import org.arctgkolbasy.bot.user.UserService
+import org.arctgkolbasy.user.UserService
 
 abstract class SecuredHandler(
     val isStateless: Boolean,
@@ -30,8 +30,6 @@ abstract class SecuredHandler(
                 bot = bot,
                 update = update
             )
-        } catch (e: Exception) {
-            e.printStackTrace()
         } finally {
             if (isTerminal) {
                 update.consume()
