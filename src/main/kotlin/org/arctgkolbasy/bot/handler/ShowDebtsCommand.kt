@@ -1,26 +1,28 @@
 package org.arctgkolbasy.bot.handler
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
 import com.github.kotlintelegrambot.entities.Update
 import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
+import emoji.Emoji
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
-import org.arctgkolbasy.user.UserRepository
+import org.arctgkolbasy.consumer.Consumer
 import org.arctgkolbasy.user.UserService
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Controller
 import org.arctgkolbasy.consumer.ConsumerRepository
+import java.lang.IllegalArgumentException
+import java.math.BigDecimal
+import java.math.RoundingMode
+import kotlin.math.ceil
 
 @Controller
 class ShowDebtsCommand(
-    val userRepository: UserRepository,
     userService: UserService,
     private val consumerRepository: ConsumerRepository,
     @Qualifier("currentUserHolder")
     currentUserHolder: ThreadLocal<User?>,
-    val objectMapper: ObjectMapper,
 ) : SecuredCommand(
     userService = userService,
     currentUserHolder = currentUserHolder,
@@ -30,31 +32,68 @@ class ShowDebtsCommand(
 
     override fun checkUserAccess(user: User): Boolean = UserRoles.USER in user.roles
 
-    override fun handleUpdateInternal(user: User, bot: Bot, update: Update) {
+    override fun sessionCheck(sessionKey: String?, session: String?): Boolean = sessionKey in steps
 
-        when (update.message()) {
-            SELF_DEBTS -> {
-            }
-
-            MY_DEBTORS -> {
-                bot.sendMessage(
-                    chatId = update.chatIdUnsafe(),
-                    text = "Сейчас посмотрим" //${consumerRepository.findById(user.id)}
-                )
-            }
-        }
+    override fun handleUpdateInternal(user: User, bot: Bot, update: Update) = when (user.sessionKey) {
+        DebtsConst.STEP_0_SELECT_DEBT_TYPE.step -> selectDebt(update, bot, user)
+        else -> stepZero(update, bot, user)
     }
 
     private fun stepZero(update: Update, bot: Bot, user: User) {
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
-            text = "Проверить сколько:",
+            text = "Выбери, чей долг ты хочешь проверить:",
             replyMarkup = keyboardReplyMarkup,
         )
-        user.updateSession(
-            DebtsOptions.OPTION_1_SELF_DEBTS.step,
-            objectMapper.writeValueAsString(null)
+        user.updateSession(DebtsConst.STEP_0_SELECT_DEBT_TYPE.step, null)
+    }
+
+    private fun selectDebt(update: Update, bot: Bot, user: User) {
+        when (update.message()) {
+            SELF_DEBTS -> selfDebts(update, bot, user)
+            MY_DEBTORS -> myDebtors(update, bot, user)
+            else -> throw IllegalArgumentException(
+                "Я тебя не понял. Посмотреть сколько: '${SELF_DEBTS}' или '${MY_DEBTORS}'?"
+            )
+        }
+    }
+
+    private fun selfDebts(update: Update, bot: Bot, user: User) {
+        val debtors = consumerRepository.findAll()
+            .filter { it.consumer.id == user.id && it.product.buyer.id != user.id}
+            .groupingBy { it.product.buyer.username }
+            .fold(BigDecimal(0)) { total: BigDecimal, c: Consumer ->
+                total + c.product.cost.divide(BigDecimal(c.product.initialAmount)) * BigDecimal(c.consumedAmount)
+            }
+            .map { it.key + " - " + it.value.setScale(2, RoundingMode.CEILING) }
+        bot.sendMessage(
+            chatId = update.chatIdUnsafe(),
+            debtors.joinToString(
+                prefix = "$DECREASE Ты должен отдать $DECREASE\n",
+                separator = "\n",
+                transform = { "@${it}" + MONEY }
+            )
         )
+        user.clearSession()
+    }
+
+    private fun myDebtors(update: Update, bot: Bot, user: User) {
+        val debtors = consumerRepository.findAll()
+            .filter { it.product.buyer.id == user.id && it.consumer.id != user.id }
+            .groupingBy { it.consumer.username }
+            .fold(BigDecimal(0)) { total: BigDecimal, c: Consumer ->
+                total + c.product.cost.divide(BigDecimal(c.product.initialAmount)) * BigDecimal(c.consumedAmount)
+            }
+            .map { it.key + " - " + it.value.setScale(2, RoundingMode.CEILING) }
+        bot.sendMessage(
+            chatId = update.chatIdUnsafe(),
+            debtors.joinToString(
+                prefix = "$INCREASE Ты должен получить $INCREASE\n",
+                separator = "\n",
+                transform = { "@${it}" + MONEY }
+            )
+        )
+        user.clearSession()
     }
 
     private val keyboardReplyMarkup = KeyboardReplyMarkup(
@@ -68,21 +107,19 @@ class ShowDebtsCommand(
         oneTimeKeyboard = true,
     )
 
-    enum class DebtsOptions(
+    enum class DebtsConst(
         val step: String,
     ) {
-        OPTION_1_SELF_DEBTS("${SHOW_DEBTS_COMMAND}1"),
-        OPTION_2_MY_DEBTORS("${SHOW_DEBTS_COMMAND}2"),
+        STEP_0_SELECT_DEBT_TYPE("${SHOW_DEBTS_COMMAND}0"),
     }
 
     companion object {
-        val steps = DebtsOptions.values().mapTo(mutableSetOf()) { it.step }
+        val steps = DebtsConst.values().mapTo(mutableSetOf()) { it.step }
         const val SHOW_DEBTS_COMMAND = "show_debts"
-        const val SELF_DEBTS = "Я должен"
-        const val MY_DEBTORS = "Мне должны"
+        val SELF_DEBTS = "Свой долг" + Emoji.FACE_EXHALING.emoji
+        val MY_DEBTORS = "Кто мне должен" + Emoji.BEAMING_FACE_WITH_SMILING_EYES.emoji
+        val MONEY = Emoji.MONEY_BAG.emoji
+        val DECREASE = Emoji.MONEY_WITH_WINGS.emoji
+        val INCREASE = Emoji.DOLLAR_BANKNOTE.emoji
     }
-
-    data class ShowDebtsSession(
-        val option: String,
-    )
 }
