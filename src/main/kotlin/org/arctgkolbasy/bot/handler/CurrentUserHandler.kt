@@ -14,6 +14,7 @@ class CurrentUserHandler(
     @Qualifier("currentUserHolder")
     val currentUserHolder: ThreadLocal<User?>,
     val commands: List<SecuredCommand>,
+    val helpCommand: HelpCommand,
 ) : Handler {
     override fun checkUpdate(update: Update): Boolean = update.message?.from != null
 
@@ -33,6 +34,9 @@ class CurrentUserHandler(
                     }
                     it.handleUpdateAndClearSessionIfNeeded(bot, update, user)
                 }
+            if (!update.consumed) {
+                helpCommand.handleUpdateAndClearSessionIfNeeded(bot, update, user)
+            }
         }
         currentUserHolder.set(null)
     }

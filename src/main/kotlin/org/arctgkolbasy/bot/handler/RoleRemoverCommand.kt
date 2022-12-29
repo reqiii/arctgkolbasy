@@ -41,13 +41,17 @@ class RoleRemoverCommand(
             text = userRepository.findAll().joinToString(
                 prefix = "Выбери пользователя:\n",
                 separator = "\n",
-                transform = { "/${it.username.toString()}" }
+                transform = { u ->
+                    "/${u.username.toString()} ${
+                        u.roles.joinToString(
+                            prefix = "[",
+                            postfix = "]"
+                        ) { role -> role.roleName.name }
+                    }"
+                }
             )
         )
-        user.updateSession(
-            RemoveRoleStates.STEP_1_CHOOSE_USER.step,
-            objectMapper.writeValueAsString(null)
-        )
+        user.updateSession(RemoveRoleStates.STEP_1_CHOOSE_USER.step)
     }
 
     private fun stepOneChooseUser(update: Update, bot: Bot, user: User) {
@@ -61,8 +65,8 @@ class RoleRemoverCommand(
             ) ?: return user.clearSession()
         )
         user.updateSession(
-            RemoveRoleStates.STEP_2_REMOVE_ROLE.step,
-            objectMapper.writeValueAsString(AddRoleSession(username = name))
+            sessionKey = RemoveRoleStates.STEP_2_REMOVE_ROLE.step,
+            session = objectMapper.writeValueAsString(AddRoleSession(username = name))
         )
     }
 
