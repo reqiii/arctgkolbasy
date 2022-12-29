@@ -5,14 +5,13 @@ import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
 import com.github.kotlintelegrambot.entities.Update
 import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
 import org.arctgkolbasy.bot.handler.UseProductCommand.Companion.USE_PRODUCT_COMMAND
-import org.arctgkolbasy.product.ProductRepository
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
-import org.arctgkolbasy.user.UserService
+import org.arctgkolbasy.product.ProductRepository
 import org.arctgkolbasy.product.ProductService
+import org.arctgkolbasy.user.UserService
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-import java.lang.IllegalArgumentException
 import kotlin.jvm.optionals.getOrNull
 
 @Component
@@ -55,7 +54,7 @@ class UseProductCommand(
 
     private fun stepZero(user: User, bot: Bot, update: Update) {
         bot.sendMessage(chatId = update.chatIdUnsafe(), text = "Напиши id со стикера")
-        user.updateSession(UseCommandSteps.STEP_1_ENTER_ID.step, null)
+        user.updateSession(UseCommandSteps.STEP_1_ENTER_ID.step)
     }
 
     @OptIn(ExperimentalStdlibApi::class)
@@ -65,14 +64,20 @@ class UseProductCommand(
         ).getOrNull() ?: throw IllegalArgumentException("Продукт с этим id не найден, напиши число со стикера")
         if (product.isDivisible()) {
             bot.sendMessage(chatId = update.chatIdUnsafe(), text = "Напиши сколько ты съел?")
-            user.updateSession(UseCommandSteps.STEP_2_ENTER_EATEN_AMOUNT.step, product.id.toString())
+            user.updateSession(
+                sessionKey = UseCommandSteps.STEP_2_ENTER_EATEN_AMOUNT.step,
+                session = product.id.toString()
+            )
         } else {
             bot.sendMessage(
                 chatId = update.chatIdUnsafe(),
                 text = "Ты доел ${product.name}?",
                 replyMarkup = keyboardReplyMarkup,
             )
-            user.updateSession(UseCommandSteps.STEP_2_ENTER_IS_ENDED.step, product.id.toString())
+            user.updateSession(
+                sessionKey = UseCommandSteps.STEP_2_ENTER_IS_ENDED.step,
+                session = product.id.toString()
+            )
         }
     }
 
@@ -80,8 +85,13 @@ class UseProductCommand(
     private fun stepTwoEnterEatenAmount(user: User, bot: Bot, update: Update) {
         val eatenAmount = update.message().toIntOrNull()
             ?: throw IllegalArgumentException("Неправильное количество, напиши число")
-        val productId = user.session?.toLongOrNull() ?: return user.clearSession()
-        val product = productRepository.findById(productId).getOrNull() ?: return user.clearSession()
+        val productId = user.session?.toLongOrNull()
+            ?: return user.clearSession()
+        val product = productRepository.findById(productId).getOrNull()
+            ?: return user.clearSession()
+        if (eatenAmount < 1 || eatenAmount > product.currentAmount) {
+            throw IllegalArgumentException("Неправильное количество. Введи число от 1 до ${product.currentAmount}")
+        }
         productService.consumeProduct(user.id, product.id, eatenAmount)
         bot.sendMessage(chatId = update.chatIdUnsafe(), text = "Я запомнил, что ты ел ${product.name}")
         user.clearSession()

@@ -37,10 +37,10 @@ abstract class SecuredHandler(
         }
     }
 
-    fun User.clearSession() = updateSession(null, null)
+    fun User.clearSession() = updateSession()
 
-    fun User.updateSession(sessionKey: String?, session: String?) {
-        userService.updateSession(this.id, sessionKey, session)
+    fun User.updateSession(sessionKey: String? = null, session: String? = null) {
+        userService.updateSession(id, sessionKey, session)
     }
 }
 

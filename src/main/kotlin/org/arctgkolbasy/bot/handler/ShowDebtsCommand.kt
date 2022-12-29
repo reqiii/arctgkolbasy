@@ -8,14 +8,12 @@ import emoji.Emoji
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
 import org.arctgkolbasy.consumer.Consumer
+import org.arctgkolbasy.consumer.ConsumerRepository
 import org.arctgkolbasy.user.UserService
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Controller
-import org.arctgkolbasy.consumer.ConsumerRepository
-import java.lang.IllegalArgumentException
 import java.math.BigDecimal
 import java.math.RoundingMode
-import kotlin.math.ceil
 
 @Controller
 class ShowDebtsCommand(
@@ -45,7 +43,7 @@ class ShowDebtsCommand(
             text = "Выбери, чей долг ты хочешь проверить:",
             replyMarkup = keyboardReplyMarkup,
         )
-        user.updateSession(DebtsConst.STEP_0_SELECT_DEBT_TYPE.step, null)
+        user.updateSession(DebtsConst.STEP_0_SELECT_DEBT_TYPE.step)
     }
 
     private fun selectDebt(update: Update, bot: Bot, user: User) {
@@ -60,7 +58,7 @@ class ShowDebtsCommand(
 
     private fun selfDebts(update: Update, bot: Bot, user: User) {
         val debtors = consumerRepository.findAll()
-            .filter { it.consumer.id == user.id && it.product.buyer.id != user.id}
+            .filter { it.consumer.id == user.id && it.product.buyer.id != user.id }
             .groupingBy { it.product.buyer.username }
             .fold(BigDecimal(0)) { total: BigDecimal, c: Consumer ->
                 total + c.product.cost.divide(BigDecimal(c.product.initialAmount)) * BigDecimal(c.consumedAmount)
@@ -69,9 +67,9 @@ class ShowDebtsCommand(
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
             debtors.joinToString(
-                prefix = "$DECREASE Ты должен отдать $DECREASE\n",
+                prefix = "${Emoji.MONEY_WITH_WINGS.emoji} Ты должен отдать ${Emoji.MONEY_WITH_WINGS.emoji}\n",
                 separator = "\n",
-                transform = { "@${it}" + MONEY }
+                transform = { "@${it}" + Emoji.MONEY_BAG.emoji }
             )
         )
         user.clearSession()
@@ -88,9 +86,9 @@ class ShowDebtsCommand(
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
             debtors.joinToString(
-                prefix = "$INCREASE Ты должен получить $INCREASE\n",
+                prefix = "${Emoji.DOLLAR_BANKNOTE.emoji} Ты должен получить ${Emoji.DOLLAR_BANKNOTE.emoji}\n",
                 separator = "\n",
-                transform = { "@${it}" + MONEY }
+                transform = { "@${it}" + Emoji.MONEY_BAG.emoji }
             )
         )
         user.clearSession()
@@ -118,8 +116,5 @@ class ShowDebtsCommand(
         const val SHOW_DEBTS_COMMAND = "show_debts"
         val SELF_DEBTS = "Свой долг" + Emoji.FACE_EXHALING.emoji
         val MY_DEBTORS = "Кто мне должен" + Emoji.BEAMING_FACE_WITH_SMILING_EYES.emoji
-        val MONEY = Emoji.MONEY_BAG.emoji
-        val DECREASE = Emoji.MONEY_WITH_WINGS.emoji
-        val INCREASE = Emoji.DOLLAR_BANKNOTE.emoji
     }
 }
