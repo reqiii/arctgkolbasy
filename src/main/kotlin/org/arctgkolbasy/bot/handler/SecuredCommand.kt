@@ -21,8 +21,13 @@ abstract class SecuredCommand(
 
     protected open fun sessionCheck(sessionKey: String?, session: String?): Boolean = false
 
-    override fun checkUpdateInternal(update: Update, user: User): Boolean =
-        (messageStartsFromCommand(update) || sessionCheck(user.sessionKey, user.session)) && (checkUserAccess(user))
+    protected open fun callbackCheck(update: Update): Boolean = false
+
+    override fun checkUpdateInternal(update: Update, user: User): Boolean = (
+        messageStartsFromCommand(update)
+            || sessionCheck(user.sessionKey, user.session)
+            || callbackCheck(update)
+        ) && (checkUserAccess(user))
 
     private fun messageStartsFromCommand(update: Update): Boolean = update
         .message

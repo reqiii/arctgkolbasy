@@ -8,14 +8,12 @@ import emoji.Emoji
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
 import org.arctgkolbasy.consumer.Consumer
+import org.arctgkolbasy.consumer.ConsumerRepository
 import org.arctgkolbasy.user.UserService
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Controller
-import org.arctgkolbasy.consumer.ConsumerRepository
-import java.lang.IllegalArgumentException
 import java.math.BigDecimal
 import java.math.RoundingMode
-import kotlin.math.ceil
 
 @Controller
 class ShowDebtsCommand(
@@ -60,10 +58,13 @@ class ShowDebtsCommand(
 
     private fun selfDebts(update: Update, bot: Bot, user: User) {
         val debtors = consumerRepository.findAll()
-            .filter { it.consumer.id == user.id && it.product.buyer.id != user.id}
+            .filter { it.consumer.id == user.id && it.product.buyer.id != user.id }
             .groupingBy { it.product.buyer.username }
             .fold(BigDecimal(0)) { total: BigDecimal, c: Consumer ->
-                total + c.product.cost.divide(BigDecimal(c.product.initialAmount)) * BigDecimal(c.consumedAmount)
+                total + c.product.cost.divide(
+                    BigDecimal(c.product.initialAmount),
+                    RoundingMode.CEILING
+                ) * BigDecimal(c.consumedAmount)
             }
             .map { it.key + " - " + it.value.setScale(2, RoundingMode.CEILING) }
         bot.sendMessage(
@@ -71,7 +72,7 @@ class ShowDebtsCommand(
             debtors.joinToString(
                 prefix = "$DECREASE Ты должен отдать $DECREASE\n",
                 separator = "\n",
-                transform = { "@${it}" + MONEY }
+                transform = { "@${it}" + MONEY },
             )
         )
         user.clearSession()

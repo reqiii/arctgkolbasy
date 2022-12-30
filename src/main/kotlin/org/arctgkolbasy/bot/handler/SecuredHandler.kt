@@ -47,7 +47,9 @@ abstract class SecuredHandler(
 fun Update.chatIdUnsafe(): ChatId = chatId()!!
 
 fun Update.chatId(): ChatId? {
-    val id = this.message?.chat?.id ?: return null
+    val id = this.message?.chat?.id
+        ?: this.callbackQuery?.message?.chat?.id
+        ?: return null
     return ChatId.fromId(id)
 }
 
