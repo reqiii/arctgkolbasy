@@ -43,7 +43,7 @@ class ShowDebtsCommand(
             text = "Выбери, чей долг ты хочешь проверить:",
             replyMarkup = keyboardReplyMarkup,
         )
-        user.updateSession(DebtsConst.STEP_0_SELECT_DEBT_TYPE.step, null)
+        user.updateSession(DebtsConst.STEP_0_SELECT_DEBT_TYPE.step)
     }
 
     private fun selectDebt(update: Update, bot: Bot, user: User) {
@@ -70,9 +70,9 @@ class ShowDebtsCommand(
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
             debtors.joinToString(
-                prefix = "$DECREASE Ты должен отдать $DECREASE\n",
+                prefix = "${Emoji.MONEY_WITH_WINGS.emoji} Ты должен отдать ${Emoji.MONEY_WITH_WINGS.emoji}\n",
                 separator = "\n",
-                transform = { "@${it}" + MONEY },
+                transform = { "@${it}" + Emoji.MONEY_BAG.emoji }
             )
         )
         user.clearSession()
@@ -89,9 +89,9 @@ class ShowDebtsCommand(
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
             debtors.joinToString(
-                prefix = "$INCREASE Ты должен получить $INCREASE\n",
+                prefix = "${Emoji.DOLLAR_BANKNOTE.emoji} Ты должен получить ${Emoji.DOLLAR_BANKNOTE.emoji}\n",
                 separator = "\n",
-                transform = { "@${it}" + MONEY }
+                transform = { "@${it}" + Emoji.MONEY_BAG.emoji }
             )
         )
         user.clearSession()
@@ -119,8 +119,5 @@ class ShowDebtsCommand(
         const val SHOW_DEBTS_COMMAND = "show_debts"
         val SELF_DEBTS = "Свой долг" + Emoji.FACE_EXHALING.emoji
         val MY_DEBTORS = "Кто мне должен" + Emoji.BEAMING_FACE_WITH_SMILING_EYES.emoji
-        val MONEY = Emoji.MONEY_BAG.emoji
-        val DECREASE = Emoji.MONEY_WITH_WINGS.emoji
-        val INCREASE = Emoji.DOLLAR_BANKNOTE.emoji
     }
 }

@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.Update
-import org.arctgkolbasy.bot.user.*
+import org.arctgkolbasy.bot.user.User
+import org.arctgkolbasy.bot.user.UserRoles
 import org.arctgkolbasy.user.UserRepository
 import org.arctgkolbasy.user.UserService
 import org.springframework.beans.factory.annotation.Qualifier
@@ -40,13 +41,17 @@ class RoleSetterCommand(
             text = userRepository.findAll().joinToString(
                 prefix = "Выбери пользователя:\n",
                 separator = "\n",
-                transform = { "/${it.username.toString()}" }
+                transform = { u ->
+                    "/${u.username.toString()} ${
+                        u.roles.joinToString(
+                            prefix = "[",
+                            postfix = "]"
+                        ) { role -> role.roleName.name }
+                    }"
+                }
             )
         )
-        user.updateSession(
-            AddRoleStates.STEP_1_CHOOSE_USER.step,
-            objectMapper.writeValueAsString(null)
-        )
+        user.updateSession(AddRoleStates.STEP_1_CHOOSE_USER.step)
     }
 
     private fun stepOneChooseUser(update: Update, bot: Bot, user: User) {
@@ -60,8 +65,8 @@ class RoleSetterCommand(
             )
         )
         user.updateSession(
-            AddRoleStates.STEP_2_CHOOSE_ROLE.step,
-            objectMapper.writeValueAsString(AddRoleSession(username = name))
+            sessionKey = AddRoleStates.STEP_2_CHOOSE_ROLE.step,
+            session = objectMapper.writeValueAsString(AddRoleSession(username = name))
         )
     }
 
