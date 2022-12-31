@@ -4,12 +4,16 @@
 
 1. Run DataBase:
     
-    ```docker run --name ArctgKolbasyDB -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_DB=arctgkolbasy_db -p 5432:5432 -d postgres```
+    ```docker run --name ArctgKolbasyDB -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_DB=arctgkolbasy_db --net=host -d postgres```
 
 2. Run migration
     
     ```gradle update -DPOSTGRES_USER=postgres -DPOSTGRES_PASSWORD=mysecretpassword -DPOSTGRES_URL=jdbc:postgresql://localhost:5432/arctgkolbasy_db```
 
-3. Run backend with your bot token
+3. Build image
 
-   ```gradle bootRun -DBOT_TOKEN=???```
+   ```docker build . -f Dockerfile -t arctgkolbasy:1```
+
+4. Run image
+   
+   ```docker run --rm -d --name bot --net=host -e BOT_TOKEN=??? arctgkolbasy:1```
