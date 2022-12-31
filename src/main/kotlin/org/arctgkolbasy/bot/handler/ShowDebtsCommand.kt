@@ -61,7 +61,10 @@ class ShowDebtsCommand(
             .filter { it.consumer.id == user.id && it.product.buyer.id != user.id }
             .groupingBy { it.product.buyer.username }
             .fold(BigDecimal(0)) { total: BigDecimal, c: Consumer ->
-                total + c.product.cost.divide(BigDecimal(c.product.initialAmount)) * BigDecimal(c.consumedAmount)
+                total + c.product.cost.divide(
+                    BigDecimal(c.product.initialAmount),
+                    RoundingMode.CEILING
+                ) * BigDecimal(c.consumedAmount)
             }
             .map { it.key + " - " + it.value.setScale(2, RoundingMode.CEILING) }
         bot.sendMessage(

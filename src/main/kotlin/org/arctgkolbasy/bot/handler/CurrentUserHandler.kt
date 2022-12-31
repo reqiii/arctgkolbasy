@@ -16,13 +16,18 @@ class CurrentUserHandler(
     val commands: List<SecuredCommand>,
     val helpCommand: HelpCommand,
 ) : Handler {
-    override fun checkUpdate(update: Update): Boolean = update.message?.from != null
+    override fun checkUpdate(update: Update): Boolean =
+        update.message?.from != null || update.callbackQuery?.from != null
 
     override fun handleUpdate(bot: Bot, update: Update) {
-        val user = userService.getOrCreateUser(update.message!!.from!!)
+        val from = update.message?.from
+            ?: update.callbackQuery?.from
+            ?: throw IllegalStateException("непонятно от кого апдейт")
+        val user = userService.getOrCreateUser(from)
         currentUserHolder.set(user)
-        val command = commands.singleOrNull {
+        val command = commands.firstOrNull {
             update.message?.text?.startsWith("/${it.getCommandName()}") == true
+                    || update.callbackQuery?.data?.startsWith(it.getCommandName()) == true
         }
         if (command != null) {
             command.handleUpdateAndClearSessionIfNeeded(bot, update, user)
