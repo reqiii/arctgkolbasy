@@ -10,4 +10,6 @@ data class User(
     val roles: Set<UserRoles>,
     val sessionKey: String?,
     val session: String?,
+    val telegramChatId: Long,
+    val lastMenuMessageId: Long?,
 )

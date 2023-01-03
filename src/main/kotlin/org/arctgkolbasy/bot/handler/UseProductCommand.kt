@@ -1,130 +1,155 @@
 package org.arctgkolbasy.bot.handler
 
 import com.github.kotlintelegrambot.Bot
-import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
+import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.Update
-import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
+import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
+import jakarta.annotation.PostConstruct
 import org.arctgkolbasy.bot.handler.UseProductCommand.Companion.USE_PRODUCT_COMMAND
+import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
+import org.arctgkolbasy.bot.user.emptySession
+import org.arctgkolbasy.product.Product
 import org.arctgkolbasy.product.ProductRepository
 import org.arctgkolbasy.product.ProductService
-import org.arctgkolbasy.user.UserService
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import kotlin.jvm.optionals.getOrNull
 
 @Component
 class UseProductCommand(
-    userService: UserService,
-    @Qualifier("currentUserHolder")
-    currentUserHolder: ThreadLocal<User?>,
     private val productRepository: ProductRepository,
     private val productService: ProductService,
-) : SecuredCommand(
-    userService = userService,
-    currentUserHolder = currentUserHolder,
-    isStateless = false,
-) {
+) : StateMachine() {
     override fun getCommandName(): String = USE_PRODUCT_COMMAND
 
     override fun checkUserAccess(user: User): Boolean = UserRoles.USER in user.roles
 
-    override fun sessionCheck(sessionKey: String?, session: String?): Boolean = sessionKey in steps
-
-    override fun handleUpdateInternal(user: User, bot: Bot, update: Update) {
-        when (user.sessionKey) {
-            UseCommandSteps.STEP_1_ENTER_ID.step -> stepOneChooseProduct(user, bot, update)
-            UseCommandSteps.STEP_2_ENTER_EATEN_AMOUNT.step -> stepTwoEnterEatenAmount(user, bot, update)
-            UseCommandSteps.STEP_2_ENTER_IS_ENDED.step -> stepTwoEnterIsEnded(user, bot, update)
-            else -> stepZero(user, bot, update)
-        }
+    override fun stepZero(user: User, bot: Bot, update: Update): Session {
+        bot.sendMessage(
+            chatId = update.chatIdUnsafe(),
+            text = "Выбери продукт или напиши id",
+            replyMarkup = chooseProductKeyboard(
+                productRepository.findAllByCurrentAmountNotOrderById(0)
+            ),
+        )
+        return Session(UseCommandSteps.STEP_1_ENTER_ID.step)
     }
 
-    private val keyboardReplyMarkup = KeyboardReplyMarkup(
-        keyboard = listOf(
-            listOf(
-                KeyboardButton(IS_EATEN_ANSWER_YES),
-                KeyboardButton(IS_EATEN_ANSWER_NO),
-            )
-        ),
-        resizeKeyboard = true,
-        oneTimeKeyboard = true,
-    )
-
-    private fun stepZero(user: User, bot: Bot, update: Update) {
-        bot.sendMessage(chatId = update.chatIdUnsafe(), text = "Напиши id со стикера")
-        user.updateSession(UseCommandSteps.STEP_1_ENTER_ID.step)
+    @PostConstruct
+    fun initSteps() {
+        addSessionStep(UseCommandSteps.STEP_1_ENTER_ID.step, this::stepOneChooseProduct)
+        addSessionStep(UseCommandSteps.STEP_2_ENTER_EATEN_AMOUNT.step, this::stepTwoEnterEatenAmount)
+        addSessionStep(UseCommandSteps.STEP_2_ENTER_IS_ENDED.step, this::stepTwoEnterIsEnded)
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    private fun stepOneChooseProduct(user: User, bot: Bot, update: Update) {
+    private fun stepOneChooseProduct(user: User, bot: Bot, update: Update): Session {
         val product = productRepository.findById(
-            update.message().toLongOrNull() ?: throw IllegalArgumentException("Неправильный id, напиши число")
-        ).getOrNull() ?: throw IllegalArgumentException("Продукт с этим id не найден, напиши число со стикера")
+            update.callbackQuery?.data?.toLongOrNull() ?: throw IllegalArgumentException("Неправильный id")
+        ).getOrNull() ?: throw IllegalArgumentException("Продукт с этим id не найден")
         if (product.isDivisible()) {
-            bot.sendMessage(chatId = update.chatIdUnsafe(), text = "Напиши сколько ты съел?")
-            user.updateSession(
-                sessionKey = UseCommandSteps.STEP_2_ENTER_EATEN_AMOUNT.step,
-                session = product.id.toString()
+            bot.editMessageText(
+                chatId = update.chatId(),
+                messageId = update.callbackQuery?.message?.messageId,
+                text = "Сколько ты съел ${product.name}?",
+                replyMarkup = enterAmountKeyboard(product)
             )
+            return Session(sessionKey = UseCommandSteps.STEP_2_ENTER_EATEN_AMOUNT.step, session = product.id.toString())
         } else {
-            bot.sendMessage(
-                chatId = update.chatIdUnsafe(),
+            bot.editMessageText(
+                chatId = update.chatId(),
+                messageId = update.callbackQuery?.message?.messageId,
                 text = "Ты доел ${product.name}?",
-                replyMarkup = keyboardReplyMarkup,
+                replyMarkup = isEatenKeyboard(),
             )
-            user.updateSession(
-                sessionKey = UseCommandSteps.STEP_2_ENTER_IS_ENDED.step,
-                session = product.id.toString()
-            )
+            return Session(sessionKey = UseCommandSteps.STEP_2_ENTER_IS_ENDED.step, session = product.id.toString())
         }
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    private fun stepTwoEnterEatenAmount(user: User, bot: Bot, update: Update) {
-        val eatenAmount = update.message().toIntOrNull()
-            ?: throw IllegalArgumentException("Неправильное количество, напиши число")
+    private fun stepTwoEnterEatenAmount(user: User, bot: Bot, update: Update): Session {
+        val amount = update.callbackQuery?.data?.toIntOrNull()
+            ?: throw IllegalArgumentException("Неправильный id")
         val productId = user.session?.toLongOrNull()
-            ?: return user.clearSession()
+            ?: throw IllegalArgumentException("Неправильный id")
         val product = productRepository.findById(productId).getOrNull()
-            ?: return user.clearSession()
-        if (eatenAmount < 1 || eatenAmount > product.currentAmount) {
+            ?: throw IllegalArgumentException("Продукт не найден")
+        if (amount < 1 || amount > product.currentAmount) {
             throw IllegalArgumentException("Неправильное количество. Введи число от 1 до ${product.currentAmount}")
         }
-        productService.consumeProduct(user.id, product.id, eatenAmount)
-        bot.sendMessage(chatId = update.chatIdUnsafe(), text = "Я запомнил, что ты ел ${product.name}")
-        user.clearSession()
+        productService.consumeProduct(user.id, product.id, amount)
+        bot.editMessageText(
+            chatId = update.chatId(),
+            messageId = update.callbackQuery?.message?.messageId,
+            text = "Я запомнил, что ты ел $amount ${product.name}"
+        )
+        return emptySession
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    private fun stepTwoEnterIsEnded(user: User, bot: Bot, update: Update) {
-        val productId = user.session?.toLongOrNull() ?: return user.clearSession()
-        val product = productRepository.findById(productId).getOrNull() ?: return user.clearSession()
-        when (update.message()) {
+    private fun stepTwoEnterIsEnded(user: User, bot: Bot, update: Update): Session {
+        val productId = user.session?.toLongOrNull()
+            ?: throw IllegalArgumentException("Неправильный id")
+        val product = productRepository.findById(productId).getOrNull()
+            ?: throw IllegalArgumentException("Продукт не найден")
+        when (update.callbackQuery?.data) {
             IS_EATEN_ANSWER_YES -> {
                 productService.markProductAsEaten(productId)
-                bot.sendMessage(
-                    chatId = update.chatIdUnsafe(),
+                bot.editMessageText(
+                    chatId = update.chatId(),
+                    messageId = update.callbackQuery?.message?.messageId,
                     text = "Я запомнил, что ты доел ${product.name}",
                 )
             }
 
             IS_EATEN_ANSWER_NO -> {
-                bot.sendMessage(
-                    chatId = update.chatIdUnsafe(),
+                bot.editMessageText(
+                    chatId = update.chatId(),
+                    messageId = update.callbackQuery?.message?.messageId,
                     text = "Я запомнил, что ты употреблял ${product.name}",
                 )
             }
 
-            else -> throw IllegalArgumentException("Я тебя не понял. Ответь '$IS_EATEN_ANSWER_YES' или '$IS_EATEN_ANSWER_NO'")
+            else -> throw IllegalArgumentException(
+                "Я тебя не понял. Ответь '$IS_EATEN_ANSWER_YES' или '$IS_EATEN_ANSWER_NO'"
+            )
         }
         productService.consumeProduct(user.id, product.id, 1)
-        user.clearSession()
+        return emptySession
     }
 
+    private fun chooseProductKeyboard(product: Iterable<Product>) = InlineKeyboardMarkup.create(
+        product.map { p ->
+            InlineKeyboardButton.CallbackData(
+                text = "${p.id} ${p.name}",
+                callbackData = p.id.toString(),
+            )
+        }.chunked(2)
+    )
+
+    private fun enterAmountKeyboard(product: Product) = InlineKeyboardMarkup.create(
+        (1..product.currentAmount)
+            .map { number ->
+                InlineKeyboardButton.CallbackData(
+                    text = number.toString(),
+                    callbackData = number.toString(),
+                )
+            }.chunked(3)
+    )
+
+    private fun isEatenKeyboard() = InlineKeyboardMarkup.createSingleRowKeyboard(
+        InlineKeyboardButton.CallbackData(
+            text = IS_EATEN_ANSWER_YES,
+            callbackData = IS_EATEN_ANSWER_YES,
+        ),
+        InlineKeyboardButton.CallbackData(
+            text = IS_EATEN_ANSWER_NO,
+            callbackData = IS_EATEN_ANSWER_NO,
+        ),
+    )
+
     companion object {
-        val steps = UseCommandSteps.values().mapTo(mutableSetOf()) { it.step }
         const val USE_PRODUCT_COMMAND = "use"
         const val IS_EATEN_ANSWER_YES = "да"
         const val IS_EATEN_ANSWER_NO = "нет"

@@ -5,30 +5,24 @@ import com.github.kotlintelegrambot.entities.ParseMode
 import com.github.kotlintelegrambot.entities.Update
 import emoji.Emoji
 import org.arctgkolbasy.bot.handler.BillCommand.Companion.BILL
+import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
+import org.arctgkolbasy.bot.user.emptySession
 import org.arctgkolbasy.product.Product
 import org.arctgkolbasy.product.ProductRepository
-import org.arctgkolbasy.user.UserService
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Controller
 import java.math.RoundingMode
 
 @Controller
 class ProductsInStockCommand(
-    userService: UserService,
-    @Qualifier("currentUserHolder")
-    currentUserHolder: ThreadLocal<User?>,
     val productRepository: ProductRepository,
-) : SecuredCommand(
-    userService = userService,
-    currentUserHolder = currentUserHolder,
-) {
+) : SecuredCommand {
     override fun getCommandName(): String = ALL_PRODUCT
 
     override fun checkUserAccess(user: User): Boolean = UserRoles.USER in user.roles
 
-    override fun handleUpdateInternal(user: User, bot: Bot, update: Update) {
+    override fun handleUpdateInternal(user: User, bot: Bot, update: Update): Session {
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
             text = productRepository.findAll().joinToString(
@@ -36,21 +30,26 @@ class ProductsInStockCommand(
                 separator = "\n",
                 transform = { product ->
                     getEmoji(product) +
-                            "${Emoji.ID_BUTTON.emoji}*${product.id}* \\- _${product.name}_ " +
-                            "осталось\\: _${product.currentAmount}_, " +
-                            getPrice(product) +
-                            ", чек\\- \\/${BILL}${product.id}"
+                        "${Emoji.ID_BUTTON.emoji}*${product.id}* \\- _${product.name}_ " +
+                        "осталось\\: _${product.currentAmount}_, " +
+                        getPrice(product) +
+                        ", чек\\- \\/${BILL}${product.id}"
                 }
             ),
             parseMode = ParseMode.MARKDOWN_V2,
         )
+        return emptySession
     }
 
     fun getPrice(product: Product): String {
         return when (product.isDivisible()) {
-            true -> "не делимый, его стоимость\\: ${product.cost.toString().replace(".", "\\.")}${Emoji.DOLLAR_BANKNOTE.emoji}"
+            false -> "не делимый, его стоимость\\: ${
+                product.cost.toString().replace(".", "\\.")
+            }${Emoji.DOLLAR_BANKNOTE.emoji}"
+
             else -> "можно поделить\\: ${
-                (product.cost.divide(product.initialAmount.toBigDecimal(), 2, RoundingMode.HALF_UP)).toString().replace(".", "\\.")
+                (product.cost.divide(product.initialAmount.toBigDecimal(), 2, RoundingMode.HALF_UP)).toString()
+                    .replace(".", "\\.")
             }\\/шт, его стоимость\\: ${product.cost.toString().replace(".", "\\.")}${Emoji.DOLLAR_BANKNOTE.emoji}"
         }
     }

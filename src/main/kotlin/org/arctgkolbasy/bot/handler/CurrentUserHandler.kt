@@ -3,16 +3,15 @@ package org.arctgkolbasy.bot.handler
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.dispatcher.handlers.Handler
 import com.github.kotlintelegrambot.entities.Update
+import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
+import org.arctgkolbasy.bot.user.emptySession
 import org.arctgkolbasy.user.UserService
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 @Component
 class CurrentUserHandler(
     val userService: UserService,
-    @Qualifier("currentUserHolder")
-    val currentUserHolder: ThreadLocal<User?>,
     val commands: List<SecuredCommand>,
     val helpCommand: HelpCommand,
 ) : Handler {
@@ -23,40 +22,53 @@ class CurrentUserHandler(
         val from = update.message?.from
             ?: update.callbackQuery?.from
             ?: throw IllegalStateException("непонятно от кого апдейт")
-        val user = userService.getOrCreateUser(from)
-        currentUserHolder.set(user)
+        val user = userService.getOrCreateUser(
+            tgApiUser = from,
+            chatId = update.message?.messageId
+                ?: update.callbackQuery?.message?.messageId
+                ?: throw IllegalStateException("Непонятный id чата")
+        )
         val command = commands.firstOrNull {
-            update.message?.text?.startsWith("/${it.getCommandName()}") == true
-                    || update.callbackQuery?.data?.startsWith(it.getCommandName()) == true
+            it.checkUserAccess(user) && (messageStartsFromCommand(update, it) || callbackStartsFromCommand(update, it))
+        } ?: commands.firstOrNull {
+            it.checkUserAccess(user) && it.sessionCheck(user.sessionKey, user.session)
+        } ?: helpCommand
+        val session = command.safeHandleUpdate(bot, update, user)
+        if (session == emptySession && command != helpCommand) {
+            helpCommand.handleUpdateInternal(user, bot, update)
         }
-        if (command != null) {
-            command.handleUpdateAndClearSessionIfNeeded(bot, update, user)
-        } else {
-            commands.filter { it.checkUpdate(update) }
-                .forEach {
-                    if (update.consumed) {
-                        return@forEach
-                    }
-                    it.handleUpdateAndClearSessionIfNeeded(bot, update, user)
-                }
-            if (!update.consumed) {
-                helpCommand.handleUpdateAndClearSessionIfNeeded(bot, update, user)
-            }
+        if (session != null) {
+            userService.updateSession(
+                id = user.id,
+                sessionKey = session.sessionKey,
+                session = session.session
+            )
         }
-        currentUserHolder.set(null)
     }
 
-    private fun SecuredCommand.handleUpdateAndClearSessionIfNeeded(bot: Bot, update: Update, user: User) {
-        try {
-            this.handleUpdate(bot, update)
+    private fun callbackStartsFromCommand(
+        update: Update,
+        it: SecuredCommand,
+    ) = update.callbackQuery?.data?.startsWith(it.getCommandName()) == true
+
+    private fun messageStartsFromCommand(
+        update: Update,
+        it: SecuredCommand,
+    ) = update.message?.text?.startsWith("/${it.getCommandName()}") == true
+
+    private fun SecuredCommand.safeHandleUpdate(bot: Bot, update: Update, user: User): Session? {
+        val session = try {
+            this.handleUpdateInternal(user, bot, update)
         } catch (exception: Exception) {
+            exception.printStackTrace()
             bot.sendMessage(
                 chatId = update.chatIdUnsafe(),
                 text = "Ошибка: ${exception.message}"
             )
+            null
+        } finally {
+            update.consume()
         }
-        if (this.isStateless) {
-            user.clearSession()
-        }
+        return session
     }
 }

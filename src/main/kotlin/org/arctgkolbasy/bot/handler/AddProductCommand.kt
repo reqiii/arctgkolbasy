@@ -4,78 +4,70 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.Update
+import jakarta.annotation.PostConstruct
 import org.arctgkolbasy.bot.handler.AddProductCommand.Companion.ADD_PRODUCT_COMMAND
+import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
+import org.arctgkolbasy.bot.user.emptySession
 import org.arctgkolbasy.product.Product
 import org.arctgkolbasy.product.ProductRepository
 import org.arctgkolbasy.user.UserRepository
-import org.arctgkolbasy.user.UserService
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
 class AddProductCommand(
-    userService: UserService,
-    @Qualifier("currentUserHolder")
-    currentUserHolder: ThreadLocal<User?>,
     val objectMapper: ObjectMapper,
     val productRepository: ProductRepository,
     val userRepository: UserRepository,
-) : SecuredCommand(
-    userService = userService,
-    currentUserHolder = currentUserHolder,
-    isStateless = false,
-) {
+) : StateMachine() {
     override fun getCommandName(): String = ADD_PRODUCT_COMMAND
 
     override fun checkUserAccess(user: User): Boolean = UserRoles.USER in user.roles
 
-    override fun sessionCheck(sessionKey: String?, session: String?): Boolean = sessionKey in steps
-
-    override fun handleUpdateInternal(user: User, bot: Bot, update: Update) = when (user.sessionKey) {
-        AddProductStates.STEP_1_ENTER_NAME.step -> stepOneEnterName(update, bot, user)
-        AddProductStates.STEP_2_ENTER_COST.step -> stepTwoEnterCost(update, bot, user)
-        AddProductStates.STEP_3_ENTER_AMOUNT.step -> stepThreeEnterAmount(update, bot, user)
-        AddProductStates.STEP_4_ENTER_IMAGE.step -> stepFourEnterImage(update, bot, user)
-        else -> stepZero(bot, update, user)
-    }
-
-    private fun stepZero(bot: Bot, update: Update, user: User) {
+    override fun stepZero(user: User, bot: Bot, update: Update): Session {
         bot.sendMessage(update.chatIdUnsafe(), "Название продукта:")
-        user.updateSession(AddProductStates.STEP_1_ENTER_NAME.step)
+        return Session(AddProductStates.STEP_1_ENTER_NAME.step)
     }
 
-    private fun stepOneEnterName(update: Update, bot: Bot, user: User) {
+    @PostConstruct
+    fun init() {
+        addSessionStep(AddProductStates.STEP_1_ENTER_NAME.step, this::stepOneEnterName)
+        addSessionStep(AddProductStates.STEP_2_ENTER_COST.step, this::stepTwoEnterCost)
+        addSessionStep(AddProductStates.STEP_3_ENTER_AMOUNT.step, this::stepThreeEnterAmount)
+        addSessionStep(AddProductStates.STEP_4_ENTER_IMAGE.step, this::stepFourEnterImage)
+    }
+
+    private fun stepOneEnterName(user: User, bot: Bot, update: Update): Session {
         val name = update.message()
         if (name.startsWith("/")) {
             throw IllegalArgumentException("Неправильное название. Отправь текстовое сообщение с названием")
         }
         bot.sendMessage(update.chatIdUnsafe(), "Цена:")
-        user.updateSession(
+        return Session(
             sessionKey = AddProductStates.STEP_2_ENTER_COST.step,
             session = objectMapper.writeValueAsString(AddProductSession(name = name))
         )
     }
 
-    private fun stepTwoEnterCost(update: Update, bot: Bot, user: User) {
+    private fun stepTwoEnterCost(user: User, bot: Bot, update: Update): Session {
         val cost = update.message().toBigDecimalOrNull()
             ?: throw IllegalArgumentException("Неправильная цена. Отправь текстовое сообщение с ценой")
         if (cost < 0.toBigDecimal()) {
             throw IllegalArgumentException("Отправь цену не меньше 0")
         }
         val addProductSession = objectMapper.readValue<AddProductSession>(
-            user.session ?: return user.clearSession()
+            user.session ?: return emptySession
         ).copy(cost = cost)
         bot.sendMessage(chatId = update.chatIdUnsafe(), text = "Количество:")
-        user.updateSession(
+        return Session(
             sessionKey = AddProductStates.STEP_3_ENTER_AMOUNT.step,
             session = objectMapper.writeValueAsString(addProductSession)
         )
     }
 
-    private fun stepThreeEnterAmount(update: Update, bot: Bot, user: User) {
+    private fun stepThreeEnterAmount(user: User, bot: Bot, update: Update): Session {
         val initialAmount = update.message().toIntOrNull()
             ?: throw IllegalArgumentException("Неправильное количество. Отправь текстовое сообщение с количеством")
         if (initialAmount < 1) {
@@ -84,13 +76,13 @@ class AddProductCommand(
         val addProductSession = objectMapper.readValue<AddProductSession>(user.session!!)
             .copy(initialAmount = initialAmount)
         bot.sendMessage(chatId = update.chatIdUnsafe(), text = "Фото чека или товара:")
-        user.updateSession(
+        return Session(
             sessionKey = AddProductStates.STEP_4_ENTER_IMAGE.step,
             session = objectMapper.writeValueAsString(addProductSession)
         )
     }
 
-    private fun stepFourEnterImage(update: Update, bot: Bot, user: User) {
+    private fun stepFourEnterImage(user: User, bot: Bot, update: Update): Session {
         val image = update.message?.photo?.maxByOrNull { it.height + it.width }?.fileId
             ?: throw IllegalArgumentException("Неправильное фото. Отправь фото чека или товара")
         val addProductSession = objectMapper.readValue<AddProductSession>(user.session!!).copy(image = image)
@@ -109,11 +101,10 @@ class AddProductCommand(
             chatId = update.chatIdUnsafe(),
             text = "Напиши на стикере id: '${product.id}'"
         )
-        user.clearSession()
+        return emptySession
     }
 
     companion object {
-        val steps: Set<String> = AddProductStates.values().map { it.step }.toSet()
         const val ADD_PRODUCT_COMMAND = "add_product"
     }
 }

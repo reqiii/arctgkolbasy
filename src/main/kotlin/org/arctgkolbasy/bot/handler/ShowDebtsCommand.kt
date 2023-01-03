@@ -5,49 +5,41 @@ import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
 import com.github.kotlintelegrambot.entities.Update
 import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
 import emoji.Emoji
+import jakarta.annotation.PostConstruct
+import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
+import org.arctgkolbasy.bot.user.emptySession
 import org.arctgkolbasy.consumer.Consumer
 import org.arctgkolbasy.consumer.ConsumerRepository
-import org.arctgkolbasy.user.UserService
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Controller
 import java.math.BigDecimal
 import java.math.RoundingMode
 
 @Controller
 class ShowDebtsCommand(
-    userService: UserService,
     private val consumerRepository: ConsumerRepository,
-    @Qualifier("currentUserHolder")
-    currentUserHolder: ThreadLocal<User?>,
-) : SecuredCommand(
-    userService = userService,
-    currentUserHolder = currentUserHolder,
-    isStateless = false,
-) {
+) : StateMachine() {
     override fun getCommandName(): String = SHOW_DEBTS_COMMAND
 
     override fun checkUserAccess(user: User): Boolean = UserRoles.USER in user.roles
 
-    override fun sessionCheck(sessionKey: String?, session: String?): Boolean = sessionKey in steps
-
-    override fun handleUpdateInternal(user: User, bot: Bot, update: Update) = when (user.sessionKey) {
-        DebtsConst.STEP_0_SELECT_DEBT_TYPE.step -> selectDebt(update, bot, user)
-        else -> stepZero(update, bot, user)
+    @PostConstruct
+    fun handleUpdateInternal() {
+        addSessionStep(DebtsConst.STEP_0_SELECT_DEBT_TYPE.step, this::selectDebt)
     }
 
-    private fun stepZero(update: Update, bot: Bot, user: User) {
+    override fun stepZero(user: User, bot: Bot, update: Update): Session {
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
             text = "Выбери, чей долг ты хочешь проверить:",
             replyMarkup = keyboardReplyMarkup,
         )
-        user.updateSession(DebtsConst.STEP_0_SELECT_DEBT_TYPE.step)
+        return Session(DebtsConst.STEP_0_SELECT_DEBT_TYPE.step)
     }
 
-    private fun selectDebt(update: Update, bot: Bot, user: User) {
-        when (update.message()) {
+    private fun selectDebt(user: User, bot: Bot, update: Update): Session {
+        return when (update.message()) {
             SELF_DEBTS -> selfDebts(update, bot, user)
             MY_DEBTORS -> myDebtors(update, bot, user)
             else -> throw IllegalArgumentException(
@@ -56,7 +48,7 @@ class ShowDebtsCommand(
         }
     }
 
-    private fun selfDebts(update: Update, bot: Bot, user: User) {
+    private fun selfDebts(update: Update, bot: Bot, user: User): Session {
         val debtors = consumerRepository.findAll()
             .filter { it.consumer.id == user.id && it.product.buyer.id != user.id }
             .groupingBy { it.product.buyer.username }
@@ -75,10 +67,10 @@ class ShowDebtsCommand(
                 transform = { "@${it}" + Emoji.MONEY_BAG.emoji }
             )
         )
-        user.clearSession()
+        return emptySession
     }
 
-    private fun myDebtors(update: Update, bot: Bot, user: User) {
+    private fun myDebtors(update: Update, bot: Bot, user: User): Session {
         val debtors = consumerRepository.findAll()
             .filter { it.product.buyer.id == user.id && it.consumer.id != user.id }
             .groupingBy { it.consumer.username }
@@ -97,7 +89,7 @@ class ShowDebtsCommand(
                 transform = { "@${it}" + Emoji.MONEY_BAG.emoji }
             )
         )
-        user.clearSession()
+        return emptySession
     }
 
     private val keyboardReplyMarkup = KeyboardReplyMarkup(
@@ -118,7 +110,6 @@ class ShowDebtsCommand(
     }
 
     companion object {
-        val steps = DebtsConst.values().mapTo(mutableSetOf()) { it.step }
         const val SHOW_DEBTS_COMMAND = "show_debts"
         val SELF_DEBTS = "Свой долг" + Emoji.FACE_EXHALING.emoji
         val MY_DEBTORS = "Кто мне должен" + Emoji.BEAMING_FACE_WITH_SMILING_EYES.emoji

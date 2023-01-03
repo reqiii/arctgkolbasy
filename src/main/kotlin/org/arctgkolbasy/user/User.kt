@@ -39,6 +39,10 @@ class User(
     var sessionKey: String?,
     @Column(name = "session")
     var session: String?,
+    @Column(name = "telegram_chat_id")
+    var telegramChatId: Long?,
+    @Column(name = "last_menu_message_id")
+    var lastMenuMessageId: Long?,
 ) {
     constructor() : this(
         id = -1,
@@ -48,5 +52,7 @@ class User(
         roles = mutableSetOf(),
         sessionKey = null,
         session = null,
+        telegramChatId = -1,
+        lastMenuMessageId = -1,
     )
 }
