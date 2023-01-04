@@ -12,7 +12,7 @@
 
 3. Build image
 
-   ```docker build . -f Dockerfile -t arctgkolbasy:1```
+   ```DOCKER_BUILDKIT=1 docker build . -f Dockerfile -t arctgkolbasy:1```
 
 4. Run image
    
