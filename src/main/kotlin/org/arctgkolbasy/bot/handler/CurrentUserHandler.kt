@@ -24,8 +24,8 @@ class CurrentUserHandler(
             ?: throw IllegalStateException("непонятно от кого апдейт")
         val user = userService.getOrCreateUser(
             tgApiUser = from,
-            chatId = update.message?.messageId
-                ?: update.callbackQuery?.message?.messageId
+            chatId = update.message?.chat?.id
+                ?: update.callbackQuery?.message?.chat?.id
                 ?: throw IllegalStateException("Непонятный id чата")
         )
         val command = commands.firstOrNull {
