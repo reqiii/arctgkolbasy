@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.Update
-import jakarta.annotation.PostConstruct
 import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
@@ -23,10 +22,9 @@ class RoleRemoverCommand(
 
     override fun checkUserAccess(user: User): Boolean = UserRoles.ADMIN in user.roles
 
-    @PostConstruct
-    fun init() {
-        addSessionStep(RemoveRoleStates.STEP_1_CHOOSE_USER.step, this::stepOneChooseUser)
-        addSessionStep(RemoveRoleStates.STEP_2_REMOVE_ROLE.step, this::stepTwoRemoveRole)
+    init {
+        addSessionStep(RemoveRoleStates.STEP_1_CHOOSE_USER.step, ::stepOneChooseUser)
+        addSessionStep(RemoveRoleStates.STEP_2_REMOVE_ROLE.step, ::stepTwoRemoveRole)
     }
 
     override fun stepZero(user: User, bot: Bot, update: Update): Session {

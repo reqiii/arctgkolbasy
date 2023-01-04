@@ -4,7 +4,6 @@ import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.Update
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
-import jakarta.annotation.PostConstruct
 import org.arctgkolbasy.bot.handler.UseProductCommand.Companion.USE_PRODUCT_COMMAND
 import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
@@ -36,11 +35,10 @@ class UseProductCommand(
         return Session(UseCommandSteps.STEP_1_ENTER_ID.step)
     }
 
-    @PostConstruct
-    fun initSteps() {
-        addSessionStep(UseCommandSteps.STEP_1_ENTER_ID.step, this::stepOneChooseProduct)
-        addSessionStep(UseCommandSteps.STEP_2_ENTER_EATEN_AMOUNT.step, this::stepTwoEnterEatenAmount)
-        addSessionStep(UseCommandSteps.STEP_2_ENTER_IS_ENDED.step, this::stepTwoEnterIsEnded)
+    init {
+        addSessionStep(UseCommandSteps.STEP_1_ENTER_ID.step, ::stepOneChooseProduct)
+        addSessionStep(UseCommandSteps.STEP_2_ENTER_EATEN_AMOUNT.step, ::stepTwoEnterEatenAmount)
+        addSessionStep(UseCommandSteps.STEP_2_ENTER_IS_ENDED.step, ::stepTwoEnterIsEnded)
     }
 
     @OptIn(ExperimentalStdlibApi::class)

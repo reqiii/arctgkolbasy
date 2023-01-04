@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.Update
-import jakarta.annotation.PostConstruct
 import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
@@ -42,10 +41,9 @@ class RoleSetterCommand(
         return Session(AddRoleStates.STEP_1_CHOOSE_USER.step)
     }
 
-    @PostConstruct
-    fun init() {
-        addSessionStep(AddRoleStates.STEP_1_CHOOSE_USER.step, this::stepOneChooseUser)
-        addSessionStep(AddRoleStates.STEP_2_CHOOSE_ROLE.step, this::stepTwoRoleSet)
+    init {
+        addSessionStep(AddRoleStates.STEP_1_CHOOSE_USER.step, ::stepOneChooseUser)
+        addSessionStep(AddRoleStates.STEP_2_CHOOSE_ROLE.step, ::stepTwoRoleSet)
     }
 
     private fun stepOneChooseUser(user: User, bot: Bot, update: Update): Session {

@@ -4,7 +4,6 @@ import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.TelegramFile
 import com.github.kotlintelegrambot.entities.Update
 import emoji.Emoji
-import jakarta.annotation.PostConstruct
 import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
@@ -22,9 +21,8 @@ class BillCommand(
 
     override fun checkUserAccess(user: User): Boolean = UserRoles.USER in user.roles
 
-    @PostConstruct
-    fun init() {
-        addSessionStep(BillCommandSteps.STEP_1_INPUT_ID.step, this::findBillById)
+    init {
+        addSessionStep(BillCommandSteps.STEP_1_INPUT_ID.step, ::findBillById)
     }
 
     override fun stepZero(user: User, bot: Bot, update: Update): Session {

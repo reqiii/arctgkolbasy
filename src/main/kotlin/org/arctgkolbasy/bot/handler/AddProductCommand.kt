@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.Update
-import jakarta.annotation.PostConstruct
 import org.arctgkolbasy.bot.handler.AddProductCommand.Companion.ADD_PRODUCT_COMMAND
 import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
@@ -31,12 +30,11 @@ class AddProductCommand(
         return Session(AddProductStates.STEP_1_ENTER_NAME.step)
     }
 
-    @PostConstruct
-    fun init() {
-        addSessionStep(AddProductStates.STEP_1_ENTER_NAME.step, this::stepOneEnterName)
-        addSessionStep(AddProductStates.STEP_2_ENTER_COST.step, this::stepTwoEnterCost)
-        addSessionStep(AddProductStates.STEP_3_ENTER_AMOUNT.step, this::stepThreeEnterAmount)
-        addSessionStep(AddProductStates.STEP_4_ENTER_IMAGE.step, this::stepFourEnterImage)
+    init {
+        addSessionStep(AddProductStates.STEP_1_ENTER_NAME.step, ::stepOneEnterName)
+        addSessionStep(AddProductStates.STEP_2_ENTER_COST.step, ::stepTwoEnterCost)
+        addSessionStep(AddProductStates.STEP_3_ENTER_AMOUNT.step, ::stepThreeEnterAmount)
+        addSessionStep(AddProductStates.STEP_4_ENTER_IMAGE.step, ::stepFourEnterImage)
     }
 
     private fun stepOneEnterName(user: User, bot: Bot, update: Update): Session {

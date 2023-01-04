@@ -5,7 +5,6 @@ import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
 import com.github.kotlintelegrambot.entities.Update
 import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
 import emoji.Emoji
-import jakarta.annotation.PostConstruct
 import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
@@ -24,9 +23,8 @@ class ShowDebtsCommand(
 
     override fun checkUserAccess(user: User): Boolean = UserRoles.USER in user.roles
 
-    @PostConstruct
-    fun handleUpdateInternal() {
-        addSessionStep(DebtsConst.STEP_0_SELECT_DEBT_TYPE.step, this::selectDebt)
+    init {
+        addSessionStep(DebtsConst.STEP_0_SELECT_DEBT_TYPE.step, ::selectDebt)
     }
 
     override fun stepZero(user: User, bot: Bot, update: Update): Session {
@@ -111,7 +109,7 @@ class ShowDebtsCommand(
 
     companion object {
         const val SHOW_DEBTS_COMMAND = "show_debts"
-        val SELF_DEBTS = "Свой долг" + Emoji.FACE_EXHALING.emoji
-        val MY_DEBTORS = "Кто мне должен" + Emoji.BEAMING_FACE_WITH_SMILING_EYES.emoji
+        private val SELF_DEBTS = "Свой долг" + Emoji.FACE_EXHALING.emoji
+        private val MY_DEBTORS = "Кто мне должен" + Emoji.BEAMING_FACE_WITH_SMILING_EYES.emoji
     }
 }
