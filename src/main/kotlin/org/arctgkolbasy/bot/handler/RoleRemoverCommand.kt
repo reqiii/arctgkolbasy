@@ -4,38 +4,30 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.Update
+import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
+import org.arctgkolbasy.bot.user.emptySession
 import org.arctgkolbasy.user.UserRepository
 import org.arctgkolbasy.user.UserService
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Controller
 
 @Controller
 class RoleRemoverCommand(
+    val userService: UserService,
     val userRepository: UserRepository,
-    userService: UserService,
-    @Qualifier("currentUserHolder")
-    currentUserHolder: ThreadLocal<User?>,
     val objectMapper: ObjectMapper,
-) : SecuredCommand(
-    userService = userService,
-    currentUserHolder = currentUserHolder,
-    isStateless = false,
-) {
+) : StateMachine() {
     override fun getCommandName(): String = REMOVE_USER_ROLE
 
     override fun checkUserAccess(user: User): Boolean = UserRoles.ADMIN in user.roles
 
-    override fun sessionCheck(sessionKey: String?, session: String?): Boolean = sessionKey in steps
-
-    override fun handleUpdateInternal(user: User, bot: Bot, update: Update) = when (user.sessionKey) {
-        RemoveRoleStates.STEP_1_CHOOSE_USER.step -> stepOneChooseUser(update, bot, user)
-        RemoveRoleStates.STEP_2_REMOVE_ROLE.step -> stepTwoRemoveRole(update, bot, user)
-        else -> stepZero(update, bot, user)
+    init {
+        addSessionStep(RemoveRoleStates.STEP_1_CHOOSE_USER.step, ::stepOneChooseUser)
+        addSessionStep(RemoveRoleStates.STEP_2_REMOVE_ROLE.step, ::stepTwoRemoveRole)
     }
 
-    private fun stepZero(update: Update, bot: Bot, user: User) {
+    override fun stepZero(user: User, bot: Bot, update: Update): Session {
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
             text = userRepository.findAll().joinToString(
@@ -51,26 +43,27 @@ class RoleRemoverCommand(
                 }
             )
         )
-        user.updateSession(RemoveRoleStates.STEP_1_CHOOSE_USER.step)
+        return Session(RemoveRoleStates.STEP_1_CHOOSE_USER.step)
     }
 
-    private fun stepOneChooseUser(update: Update, bot: Bot, user: User) {
-        val name = update.message().replaceFirst("/", "")
+    private fun stepOneChooseUser(user: User, bot: Bot, update: Update): Session {
+        val username = update.message().replaceFirst("/", "")
+        userRepository.findByUsername(username) ?: throw IllegalArgumentException("Не найден $username")
         bot.sendMessage(
             update.chatIdUnsafe(),
-            userRepository.findByUsername(name)?.roles?.joinToString(
-                prefix = "Текущие роли пользователя ${name}:\n",
+            userRepository.findByUsername(username)?.roles?.joinToString(
+                prefix = "Текущие роли пользователя ${username}:\n",
                 separator = "\n",
                 transform = { "/${it.roleName.name}" }
-            ) ?: return user.clearSession()
+            ) ?: return emptySession
         )
-        user.updateSession(
+        return Session(
             sessionKey = RemoveRoleStates.STEP_2_REMOVE_ROLE.step,
-            session = objectMapper.writeValueAsString(AddRoleSession(username = name))
+            session = objectMapper.writeValueAsString(AddRoleSession(username = username))
         )
     }
 
-    private fun stepTwoRemoveRole(update: Update, bot: Bot, user: User) {
+    private fun stepTwoRemoveRole(user: User, bot: Bot, update: Update): Session {
         val role = when (update.message().replaceFirst("/", "")) {
             UserRoles.ADMIN.name -> UserRoles.ADMIN
             UserRoles.USER.name -> UserRoles.USER
@@ -83,7 +76,7 @@ class RoleRemoverCommand(
             chatId = update.chatIdUnsafe(),
             text = "Роль $role пользователя ${removeRoleSession.username} удалена."
         )
-        user.clearSession()
+        return emptySession
     }
 
     enum class RemoveRoleStates(
@@ -94,7 +87,6 @@ class RoleRemoverCommand(
     }
 
     companion object {
-        val steps = RemoveRoleStates.values().mapTo(mutableSetOf()) { it.step }
         const val REMOVE_USER_ROLE = "remove_user_role"
     }
 

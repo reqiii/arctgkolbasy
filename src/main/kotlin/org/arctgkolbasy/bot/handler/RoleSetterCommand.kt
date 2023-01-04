@@ -4,38 +4,25 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.Update
+import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
+import org.arctgkolbasy.bot.user.emptySession
 import org.arctgkolbasy.user.UserRepository
 import org.arctgkolbasy.user.UserService
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Controller
 
 @Controller
 class RoleSetterCommand(
     val userRepository: UserRepository,
-    userService: UserService,
-    @Qualifier("currentUserHolder")
-    currentUserHolder: ThreadLocal<User?>,
+    val userService: UserService,
     val objectMapper: ObjectMapper,
-) : SecuredCommand(
-    userService = userService,
-    currentUserHolder = currentUserHolder,
-    isStateless = false,
-) {
+) : StateMachine() {
     override fun getCommandName(): String = ADD_USER_ROLE
 
     override fun checkUserAccess(user: User): Boolean = UserRoles.ADMIN in user.roles
 
-    override fun sessionCheck(sessionKey: String?, session: String?): Boolean = sessionKey in steps
-
-    override fun handleUpdateInternal(user: User, bot: Bot, update: Update) = when (user.sessionKey) {
-        AddRoleStates.STEP_1_CHOOSE_USER.step -> stepOneChooseUser(update, bot, user)
-        AddRoleStates.STEP_2_CHOOSE_ROLE.step -> stepTwoRoleSet(update, bot, user)
-        else -> stepZero(update, bot, user)
-    }
-
-    private fun stepZero(update: Update, bot: Bot, user: User) {
+    override fun stepZero(user: User, bot: Bot, update: Update): Session {
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
             text = userRepository.findAll().joinToString(
@@ -51,26 +38,32 @@ class RoleSetterCommand(
                 }
             )
         )
-        user.updateSession(AddRoleStates.STEP_1_CHOOSE_USER.step)
+        return Session(AddRoleStates.STEP_1_CHOOSE_USER.step)
     }
 
-    private fun stepOneChooseUser(update: Update, bot: Bot, user: User) {
-        val name = update.message().replaceFirst("/", "")
+    init {
+        addSessionStep(AddRoleStates.STEP_1_CHOOSE_USER.step, ::stepOneChooseUser)
+        addSessionStep(AddRoleStates.STEP_2_CHOOSE_ROLE.step, ::stepTwoRoleSet)
+    }
+
+    private fun stepOneChooseUser(user: User, bot: Bot, update: Update): Session {
+        val username = update.message().replaceFirst("/", "")
+        userRepository.findByUsername(username) ?: throw IllegalArgumentException("Не найден $username")
         bot.sendMessage(
             update.chatIdUnsafe(),
             enumValues<UserRoles>().joinToString(
-                prefix = "Выбран пользователь ${name}, какую роль добавить?\n",
+                prefix = "Выбран пользователь ${username}, какую роль добавить?\n",
                 separator = "\n",
                 transform = { "/${it.name}" }
             )
         )
-        user.updateSession(
+        return Session(
             sessionKey = AddRoleStates.STEP_2_CHOOSE_ROLE.step,
-            session = objectMapper.writeValueAsString(AddRoleSession(username = name))
+            session = objectMapper.writeValueAsString(AddRoleSession(username = username))
         )
     }
 
-    private fun stepTwoRoleSet(update: Update, bot: Bot, user: User) {
+    private fun stepTwoRoleSet(user: User, bot: Bot, update: Update): Session {
         val role = when (update.message().replaceFirst("/", "")) {
             UserRoles.ADMIN.name -> UserRoles.ADMIN
             UserRoles.USER.name -> UserRoles.USER
@@ -83,7 +76,7 @@ class RoleSetterCommand(
             chatId = update.chatIdUnsafe(),
             text = "Роль $role для пользователя ${addRoleSession.username} добавлена"
         )
-        user.clearSession()
+        return emptySession
     }
 
     enum class AddRoleStates(
@@ -94,7 +87,6 @@ class RoleSetterCommand(
     }
 
     companion object {
-        val steps = AddRoleStates.values().mapTo(mutableSetOf()) { it.step }
         const val ADD_USER_ROLE = "add_user_role"
     }
 

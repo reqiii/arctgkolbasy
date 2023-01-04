@@ -16,4 +16,8 @@
         <sqlFile path="src/main/resources/db/migration/changesets/3-add-session-columns-for-users-table.sql"/>
     </changeSet>
 
+    <changeSet id="4-add-telegram-chat-info-for-users-table" author="rales">
+        <sqlFile path="src/main/resources/db/migration/changesets/4-add-telegram-chat-info-for-users-table.sql"/>
+    </changeSet>
+
 </databaseChangeLog>
