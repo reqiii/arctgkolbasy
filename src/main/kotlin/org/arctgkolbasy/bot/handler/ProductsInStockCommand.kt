@@ -25,7 +25,7 @@ class ProductsInStockCommand(
     override fun handleUpdateInternal(user: User, bot: Bot, update: Update): Session {
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
-            text = productRepository.findAll().joinToString(
+            text = productRepository.findAllByCurrentAmountNotOrderById(0).joinToString(
                 prefix = "Продукты в наличии\\:\n",
                 separator = "\n",
                 transform = { product ->
