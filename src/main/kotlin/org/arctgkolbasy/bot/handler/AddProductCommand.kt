@@ -39,9 +39,6 @@ class AddProductCommand(
 
     private fun stepOneEnterName(user: User, bot: Bot, update: Update): Session {
         val name = update.message()
-        if (name.startsWith("/")) {
-            throw IllegalArgumentException("Неправильное название. Отправь текстовое сообщение с названием")
-        }
         bot.sendMessage(update.chatIdUnsafe(), "Цена:")
         return Session(
             sessionKey = AddProductStates.STEP_2_ENTER_COST.step,

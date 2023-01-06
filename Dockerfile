@@ -1,7 +1,8 @@
+# syntax=docker/dockerfile:experimental
 FROM --platform=linux/amd64 gradle:jdk17-alpine AS gradle
 WORKDIR /app
 COPY . .
-RUN gradle bootJar --debug --stacktrace
+RUN --mount=type=cache,target=/root/.gradle gradle bootJar --debug --stacktrace
 
 FROM --platform=linux/amd64 openjdk:17 as runtime
 WORKDIR /app

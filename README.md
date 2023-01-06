@@ -12,8 +12,12 @@
 
 3. Build image
 
-   ```docker build . -f Dockerfile -t arctgkolbasy:1```
+   ```DOCKER_BUILDKIT=1 docker build . -f Dockerfile -t arctgkolbasy:1```
 
 4. Run image
    
    ```docker run --rm -d --name bot --net=host -e BOT_TOKEN=??? arctgkolbasy:1```
+
+5. Do backups
+
+   ```echo "0 22 * * * backup.sh TOKEN CHAT" | crontab -```

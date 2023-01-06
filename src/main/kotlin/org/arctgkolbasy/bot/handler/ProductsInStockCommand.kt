@@ -4,6 +4,7 @@ import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.ParseMode
 import com.github.kotlintelegrambot.entities.Update
 import emoji.Emoji
+import org.arctgkolbasy.bot.extensions.escapeForMarkdownV2
 import org.arctgkolbasy.bot.handler.BillCommand.Companion.BILL
 import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
@@ -25,12 +26,12 @@ class ProductsInStockCommand(
     override fun handleUpdateInternal(user: User, bot: Bot, update: Update): Session {
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
-            text = productRepository.findAll().joinToString(
+            text = productRepository.findAllByCurrentAmountNotOrderById(0).joinToString(
                 prefix = "Продукты в наличии\\:\n",
                 separator = "\n",
                 transform = { product ->
                     getEmoji(product) +
-                        "${Emoji.ID_BUTTON.emoji}*${product.id}* \\- _${product.name}_ " +
+                        "${Emoji.ID_BUTTON.emoji}*${product.id}* \\- _${product.name.escapeForMarkdownV2()}_ " +
                         "осталось\\: _${product.currentAmount}_, " +
                         getPrice(product) +
                         ", чек\\- \\/${BILL}${product.id}"
