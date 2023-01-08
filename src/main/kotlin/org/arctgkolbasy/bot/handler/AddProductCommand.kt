@@ -90,6 +90,7 @@ class AddProductCommand(
                 currentAmount = addProductSession.initialAmount!!,
                 productImage = addProductSession.image!!,
                 buyer = userRepository.findByTelegramId(user.telegramId)!!,
+                consumers = mutableSetOf(),
             )
         )
         bot.sendMessage(

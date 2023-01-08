@@ -10,14 +10,15 @@ import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
 import org.arctgkolbasy.bot.user.emptySession
 import org.arctgkolbasy.consumer.Consumer
-import org.arctgkolbasy.consumer.ConsumerRepository
+import org.arctgkolbasy.product.Product
+import org.arctgkolbasy.product.ProductRepository
 import org.springframework.stereotype.Controller
 import java.math.BigDecimal
 import java.math.RoundingMode
 
 @Controller
 class ShowDebtsCommand(
-    private val consumerRepository: ConsumerRepository,
+    private val productRepository: ProductRepository,
 ) : StateMachine() {
     override fun getCommandName(): String = SHOW_DEBTS_COMMAND
 
@@ -41,20 +42,30 @@ class ShowDebtsCommand(
             SELF_DEBTS -> selfDebts(update, bot, user)
             MY_DEBTORS -> myDebtors(update, bot, user)
             else -> throw IllegalArgumentException(
-                "Я тебя не понял. Посмотреть сколько: '${SELF_DEBTS}' или '${MY_DEBTORS}'?"
+                "Я тебя не понял. Нужно выбрать доступные варианты."
             )
         }
     }
 
     private fun selfDebts(update: Update, bot: Bot, user: User): Session {
-        val debtors = consumerRepository.findAll()
-            .filter { it.consumer.id == user.id && it.product.buyer.id != user.id }
-            .groupingBy { it.product.buyer.username }
-            .fold(BigDecimal(0)) { total: BigDecimal, c: Consumer ->
-                total + c.product.cost.divide(
-                    BigDecimal(c.product.initialAmount),
-                    RoundingMode.CEILING
-                ) * BigDecimal(c.consumedAmount)
+        val debtors = productRepository.findAll()
+            .filter { product ->
+                product.buyer.id != user.id && product.consumers.any {
+                    it.consumer.id == user.id
+                }
+            }
+            .groupingBy { it.buyer.username }
+            .fold(BigDecimal.ZERO) { total: BigDecimal, p: Product ->
+                if (p.isDivisible()) {
+                    total + p.cost.divide(BigDecimal(p.initialAmount), RoundingMode.CEILING) * BigDecimal(
+                        p.consumers.find { it.product.id == p.id }!!.consumedAmount
+                    )
+                } else {
+                    if (p.consumers.isNotEmpty())
+                        total + p.cost.divide(BigDecimal(p.consumers.size), RoundingMode.CEILING)
+                    else
+                        total + p.cost
+                }
             }
             .map { it.key + " - " + it.value.setScale(2, RoundingMode.CEILING) }
         bot.editMessageText(
@@ -70,15 +81,21 @@ class ShowDebtsCommand(
     }
 
     private fun myDebtors(update: Update, bot: Bot, user: User): Session {
-        val debtors = consumerRepository.findAll()
-            .filter { it.product.buyer.id == user.id && it.consumer.id != user.id }
+        val debtors = productRepository.findAll()
+            .filter { product -> product.buyer.id == user.id }
+            .flatMap { it.consumers }
             .groupingBy { it.consumer.username }
-            .fold(BigDecimal(0)) { total: BigDecimal, c: Consumer ->
-                total + c.product.cost.divide(
-                    BigDecimal(c.product.initialAmount),
-                    RoundingMode.CEILING
-                ) * BigDecimal(c.consumedAmount)
+            .fold(BigDecimal.ZERO) { total: BigDecimal, c: Consumer ->
+                if (c.product.isDivisible() && c.consumer.id != user.id) {
+                    total + c.product.cost.divide(
+                        BigDecimal(c.product.initialAmount),
+                        RoundingMode.CEILING
+                    ) * BigDecimal(c.consumedAmount)
+                } else if (c.product.consumers.isNotEmpty() && c.consumer.id != user.id) {
+                    total + c.product.cost.divide(BigDecimal(c.product.consumers.size), RoundingMode.CEILING)
+                } else total
             }
+            .filter { it.key != user.username }
             .map { it.key + " - " + it.value.setScale(2, RoundingMode.CEILING) }
         bot.editMessageText(
             chatId = update.chatIdUnsafe(),
