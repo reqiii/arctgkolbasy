@@ -1,9 +1,9 @@
 package org.arctgkolbasy.bot.handler
 
 import com.github.kotlintelegrambot.Bot
-import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
+import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.Update
-import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
+import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
 import emoji.Emoji
 import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
@@ -37,7 +37,7 @@ class ShowDebtsCommand(
     }
 
     private fun selectDebt(user: User, bot: Bot, update: Update): Session {
-        return when (update.message()) {
+        return when (update.callbackQuery?.data) {
             SELF_DEBTS -> selfDebts(update, bot, user)
             MY_DEBTORS -> myDebtors(update, bot, user)
             else -> throw IllegalArgumentException(
@@ -57,13 +57,14 @@ class ShowDebtsCommand(
                 ) * BigDecimal(c.consumedAmount)
             }
             .map { it.key + " - " + it.value.setScale(2, RoundingMode.CEILING) }
-        bot.sendMessage(
+        bot.editMessageText(
             chatId = update.chatIdUnsafe(),
-            debtors.joinToString(
+            messageId = update.callbackQuery?.message?.messageId,
+            text = debtors.joinToString(
                 prefix = "${Emoji.MONEY_WITH_WINGS.emoji} Ты должен отдать ${Emoji.MONEY_WITH_WINGS.emoji}\n",
                 separator = "\n",
                 transform = { "@${it}" + Emoji.MONEY_BAG.emoji }
-            )
+            ),
         )
         return emptySession
     }
@@ -79,26 +80,21 @@ class ShowDebtsCommand(
                 ) * BigDecimal(c.consumedAmount)
             }
             .map { it.key + " - " + it.value.setScale(2, RoundingMode.CEILING) }
-        bot.sendMessage(
+        bot.editMessageText(
             chatId = update.chatIdUnsafe(),
-            debtors.joinToString(
+            messageId = update.callbackQuery?.message?.messageId,
+            text = debtors.joinToString(
                 prefix = "${Emoji.DOLLAR_BANKNOTE.emoji} Ты должен получить ${Emoji.DOLLAR_BANKNOTE.emoji}\n",
                 separator = "\n",
                 transform = { "@${it}" + Emoji.MONEY_BAG.emoji }
-            )
+            ),
         )
         return emptySession
     }
 
-    private val keyboardReplyMarkup = KeyboardReplyMarkup(
-        keyboard = listOf(
-            listOf(
-                KeyboardButton(SELF_DEBTS),
-                KeyboardButton(MY_DEBTORS),
-            )
-        ),
-        resizeKeyboard = true,
-        oneTimeKeyboard = true,
+    private val keyboardReplyMarkup = InlineKeyboardMarkup.createSingleRowKeyboard(
+        InlineKeyboardButton.CallbackData(SELF_DEBTS, SELF_DEBTS),
+        InlineKeyboardButton.CallbackData(MY_DEBTORS, MY_DEBTORS),
     )
 
     enum class DebtsConst(

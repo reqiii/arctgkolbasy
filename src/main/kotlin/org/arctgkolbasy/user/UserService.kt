@@ -2,6 +2,7 @@ package org.arctgkolbasy.user
 
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import kotlin.jvm.optionals.getOrNull
@@ -78,5 +79,9 @@ class UserService(
         val dbUser = userRepository.findById(user.id).getOrNull()
             ?: throw IllegalArgumentException("")
         dbUser.lastMenuMessageId = messageId
+    }
+
+    fun getPageFromCursor(id: Long = -1, limit: Int = 100): List<DbUser> {
+        return userRepository.getPageFromCursor(id, Pageable.ofSize(limit))
     }
 }

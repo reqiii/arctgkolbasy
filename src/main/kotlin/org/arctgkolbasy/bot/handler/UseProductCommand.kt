@@ -12,6 +12,7 @@ import org.arctgkolbasy.bot.user.emptySession
 import org.arctgkolbasy.product.Product
 import org.arctgkolbasy.product.ProductRepository
 import org.arctgkolbasy.product.ProductService
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Component
 import kotlin.jvm.optionals.getOrNull
 
@@ -29,7 +30,11 @@ class UseProductCommand(
             chatId = update.chatIdUnsafe(),
             text = "Выбери продукт или напиши id",
             replyMarkup = chooseProductKeyboard(
-                productRepository.findAllByCurrentAmountNotOrderById(0)
+                productRepository.findAllByCurrentAmountNotOrderById(
+                    cursor = -1,
+                    currentAmount = 0,
+                    pageable = Pageable.ofSize(100)
+                )
             ),
         )
         return Session(UseCommandSteps.STEP_1_ENTER_ID.step)
