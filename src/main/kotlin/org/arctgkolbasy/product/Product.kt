@@ -20,18 +20,18 @@ class Product(
     @Column(name = "product_id", insertable = false)
     val id: Long,
     @Column(name = "name")
-    var name: String,
+    val name: String,
     @Column(name = "cost")
-    var cost: BigDecimal,
+    val cost: BigDecimal,
     @Column(name = "initial_amount")
     val initialAmount: Int,
     @Column(name = "current_amount")
     var currentAmount: Int,
     @Column(name = "product_image")
-    var productImage: String,
+    val productImage: String,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id")
-    var buyer: User,
+    val buyer: User,
 ) {
     fun isDivisible(): Boolean = initialAmount != 1
 }
