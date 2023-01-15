@@ -30,18 +30,8 @@ class Product(
     @Column(name = "product_image")
     val productImage: String,
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "buyer_id", nullable = false)
+    @JoinColumn(name = "buyer_id")
     val buyer: User,
 ) {
     fun isDivisible(): Boolean = initialAmount != 1
-
-    constructor() : this(
-        id = -1,
-        name = "",
-        cost = BigDecimal.ZERO,
-        initialAmount = -1,
-        currentAmount = -1,
-        productImage = "",
-        buyer = User(),
-    )
 }

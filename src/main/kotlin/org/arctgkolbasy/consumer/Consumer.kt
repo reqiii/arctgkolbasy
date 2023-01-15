@@ -27,24 +27,12 @@ class Consumer(
     val product: Product,
     @Column(name = "consumed_amount")
     var consumedAmount: Int,
-) {
-    constructor() : this(
-        id = ConsumerId(),
-        consumer = User(),
-        product = Product(),
-        consumedAmount = 0,
-    )
-}
+)
 
 @Embeddable
-class ConsumerId(
+data class ConsumerId(
     @Column(name = "user_id")
     val userId: Long,
     @Column(name = "product_id")
     val productId: Long,
-) : Serializable {
-    constructor() : this(
-        -1,
-        -1,
-    )
-}
+) : Serializable

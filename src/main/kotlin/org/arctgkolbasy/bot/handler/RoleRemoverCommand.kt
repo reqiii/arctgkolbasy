@@ -30,7 +30,7 @@ class RoleRemoverCommand(
     override fun stepZero(user: User, bot: Bot, update: Update): Session {
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
-            text = userRepository.findAll().joinToString(
+            text = userService.getPageFromCursor().joinToString(
                 prefix = "Выбери пользователя:\n",
                 separator = "\n",
                 transform = { u ->
@@ -48,14 +48,15 @@ class RoleRemoverCommand(
 
     private fun stepOneChooseUser(user: User, bot: Bot, update: Update): Session {
         val username = update.message().replaceFirst("/", "")
-        userRepository.findByUsername(username) ?: throw IllegalArgumentException("Не найден $username")
+        val selectedUser = userRepository.findByUsername(username)
+            ?: throw IllegalArgumentException("Не найден $username")
         bot.sendMessage(
             update.chatIdUnsafe(),
-            userRepository.findByUsername(username)?.roles?.joinToString(
+            selectedUser.roles.joinToString(
                 prefix = "Текущие роли пользователя ${username}:\n",
                 separator = "\n",
                 transform = { "/${it.roleName.name}" }
-            ) ?: return emptySession
+            )
         )
         return Session(
             sessionKey = RemoveRoleStates.STEP_2_REMOVE_ROLE.step,

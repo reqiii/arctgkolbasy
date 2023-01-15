@@ -18,7 +18,7 @@ class ProductService(
 ) {
     @OptIn(ExperimentalStdlibApi::class)
     @Transactional
-    fun consumeProduct(userId: Long, productId: Long, consumedAmountRaw: Int) {
+    fun consumeProduct(userId: Long, productId: Long, consumedAmountRaw: Int): Product {
         val user = userRepository.findById(userId).getOrNull()
             ?: throw IllegalStateException("Нет пользователя с id '$userId'")
         val product = productRepository.findById(productId).getOrNull()
@@ -41,6 +41,7 @@ class ProductService(
         } else {
             consumer.consumedAmount = 1
         }
+        return product
     }
 
     @OptIn(ExperimentalStdlibApi::class)

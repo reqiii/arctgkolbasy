@@ -1,0 +1,73 @@
+plugins {
+    id("org.springframework.boot") version "3.0.0"
+    id("io.spring.dependency-management") version "1.1.0"
+    id("org.jetbrains.kotlin.jvm") version "1.7.21"
+    id("org.jetbrains.kotlin.plugin.spring") version "1.7.21"
+    id("org.jetbrains.kotlin.plugin.jpa") version "1.7.21"
+    id("org.jetbrains.kotlin.plugin.allopen") version "1.7.21"
+    id("org.jetbrains.kotlin.plugin.noarg") version "1.7.21"
+    id("org.liquibase.gradle") version "2.1.1"
+}
+
+group = "org"
+version = "0.0.1-SNAPSHOT"
+java.sourceCompatibility = JavaVersion.VERSION_17
+
+repositories {
+    mavenCentral()
+    maven { url = "https://jitpack.io" }
+}
+
+dependencies {
+    implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.0.7")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.14.0")
+    runtimeOnly("org.postgresql:postgresql")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    liquibaseRuntime("org.liquibase:liquibase-core")
+    liquibaseRuntime("org.postgresql:postgresql")
+    liquibaseRuntime("info.picocli:picocli:4.7.0")
+}
+
+compileKotlin {
+    kotlinOptions {
+        freeCompilerArgs = ["-Xjsr305=strict"]
+        jvmTarget = "17"
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+def liquibaseUrl = System.getProperty("POSTGRES_URL") ?: "jdbc:postgresql://localhost:5432/arctgkolbasy_db"
+def liquibaseUser = System.getProperty("POSTGRES_USER") ?: "postgres"
+def liquibasePwd = System.getProperty("POSTGRES_PASSWORD") ?: "mysecretpassword"
+
+noArg {
+    annotation("jakarta.persistence.Entity")
+}
+
+allOpen {
+    annotations(
+            "jakarta.persistence.Entity",
+            "jakarta.persistence.MappedSuperclass",
+            "jakarta.persistence.Embedabble"
+    )
+}
+
+liquibase {
+    activities {
+        main {
+            logLevel "info"
+            changeLogFile "src/main/resources/db/migration/migrations.xml"
+            url liquibaseUrl
+            username liquibaseUser
+            password liquibasePwd
+        }
+        runList = "main"
+    }
+}

@@ -12,7 +12,9 @@ import org.arctgkolbasy.bot.user.UserRoles
 import org.arctgkolbasy.bot.user.emptySession
 import org.arctgkolbasy.product.Product
 import org.arctgkolbasy.product.ProductRepository
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Controller
+import org.springframework.transaction.annotation.Transactional
 import java.math.RoundingMode
 
 @Controller
@@ -26,7 +28,11 @@ class ProductsInStockCommand(
     override fun handleUpdateInternal(user: User, bot: Bot, update: Update): Session {
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
-            text = productRepository.findAllByCurrentAmountNotOrderById(0).joinToString(
+            text = productRepository.findAllByCurrentAmountNotOrderById(
+                cursor = -1,
+                currentAmount = 0,
+                pageable = Pageable.ofSize(100)
+            ).joinToString(
                 prefix = "Продукты в наличии\\:\n",
                 separator = "\n",
                 transform = { product ->

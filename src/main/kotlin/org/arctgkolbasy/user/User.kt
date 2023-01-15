@@ -9,10 +9,16 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.JoinTable
 import jakarta.persistence.ManyToMany
+import jakarta.persistence.NamedAttributeNode
+import jakarta.persistence.NamedEntityGraph
 import jakarta.persistence.Table
 
 @Entity
 @Table(name = "users")
+@NamedEntityGraph(
+    name = "User.detail",
+    attributeNodes = [NamedAttributeNode("roles")]
+)
 class User(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,16 +49,4 @@ class User(
     var telegramChatId: Long?,
     @Column(name = "last_menu_message_id")
     var lastMenuMessageId: Long?,
-) {
-    constructor() : this(
-        id = -1,
-        telegramId = 0,
-        isBot = false,
-        firstName = "",
-        roles = mutableSetOf(),
-        sessionKey = null,
-        session = null,
-        telegramChatId = -1,
-        lastMenuMessageId = -1,
-    )
-}
+)

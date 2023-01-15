@@ -25,7 +25,7 @@ class RoleSetterCommand(
     override fun stepZero(user: User, bot: Bot, update: Update): Session {
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
-            text = userRepository.findAll().joinToString(
+            text = userService.getPageFromCursor().joinToString(
                 prefix = "Выбери пользователя:\n",
                 separator = "\n",
                 transform = { u ->
