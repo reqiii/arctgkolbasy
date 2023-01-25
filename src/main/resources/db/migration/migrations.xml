@@ -20,4 +20,8 @@
         <sqlFile path="src/main/resources/db/migration/changesets/4-add-telegram-chat-info-for-users-table.sql"/>
     </changeSet>
 
+    <changeSet id="5-add-transactions" author="rales">
+        <sqlFile path="src/main/resources/db/migration/changesets/5-add-transactions.sql"/>
+    </changeSet>
+
 </databaseChangeLog>

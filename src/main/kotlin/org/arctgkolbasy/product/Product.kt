@@ -2,6 +2,7 @@ package org.arctgkolbasy.product
 
 import jakarta.persistence.*
 import org.arctgkolbasy.consumer.Consumer
+import org.arctgkolbasy.transactions.Transaction
 import org.arctgkolbasy.user.User
 import java.math.BigDecimal
 
@@ -25,10 +26,16 @@ class Product(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id")
     val buyer: User,
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = true)
     @MapsId("consumerId")
     val consumers: Set<Consumer>,
+    @OneToMany(
+        mappedBy = "product",
+        targetEntity = Transaction::class,
+        fetch = FetchType.LAZY
+    )
+    val transactions: List<Transaction>,
 ) {
     fun isDivisible(): Boolean = initialAmount != 1
 }

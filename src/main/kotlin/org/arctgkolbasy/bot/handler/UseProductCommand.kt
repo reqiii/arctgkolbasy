@@ -14,6 +14,7 @@ import org.arctgkolbasy.bot.user.emptySession
 import org.arctgkolbasy.product.Product
 import org.arctgkolbasy.product.ProductRepository
 import org.arctgkolbasy.product.ProductService
+import org.arctgkolbasy.transactions.TransactionService
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Component
 import kotlin.jvm.optionals.getOrNull
@@ -22,6 +23,7 @@ import kotlin.jvm.optionals.getOrNull
 class UseProductCommand(
     private val productRepository: ProductRepository,
     private val productService: ProductService,
+    private val transactionService: TransactionService,
     private val objectMapper: ObjectMapper,
 ) : StateMachine() {
     override fun getCommandName(): String = USE_PRODUCT_COMMAND
@@ -117,10 +119,15 @@ class UseProductCommand(
         )
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
     private fun stepTwoEnterIsEnded(user: User, bot: Bot, update: Update): Session {
         val useProductSession: UseProductSessionStep1 = deserializeSession(user)
         val productId = useProductSession.id
-        val product = productService.consumeProduct(user.id, productId, 1)
+        val product = transactionService.consumeProduct(
+            productId = productId,
+            consumerId = user.id,
+            amountRaw = 1
+        )
         when (update.callbackQuery?.data) {
             CALLBACK_DATA_YES -> {
                 productService.markProductAsEaten(productId)
@@ -150,10 +157,10 @@ class UseProductCommand(
         val useProductSession: UseProductSessionStep2 = deserializeSession(user)
         when (update.callbackQuery?.data) {
             CALLBACK_DATA_YES -> {
-                productService.consumeProduct(
-                    userId = user.id,
+                transactionService.consumeProduct(
                     productId = useProductSession.id,
-                    consumedAmountRaw = useProductSession.eatenAmount
+                    consumerId = user.id,
+                    amountRaw = useProductSession.eatenAmount
                 )
                 bot.editMessageText(
                     chatId = update.chatId(),

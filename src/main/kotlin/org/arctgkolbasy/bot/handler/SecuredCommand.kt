@@ -7,6 +7,7 @@ import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 
 interface SecuredCommand {
+    fun display() = true
     fun getCommandName(): String
     fun checkUserAccess(user: User): Boolean
     fun sessionCheck(sessionKey: String?, session: String?): Boolean = false

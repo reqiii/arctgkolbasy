@@ -32,16 +32,17 @@ class HelpCommand(
     }
 
     private fun getInlineKeyboardMarkup(user: User): InlineKeyboardMarkup {
-        val buttons = securedCommands.filter { it.checkUserAccess(user) }
-            .map { command ->
-                InlineKeyboardButton.CallbackData(
-                    text = command.getCommandName()
-                        .replaceFirstChar { it.uppercase() }
-                        .replace("_", " "),
-                    callbackData = command.getCommandName()
-                        .replace("/", "")
-                )
-            }
+        val buttons = securedCommands.filter {
+            it.checkUserAccess(user) && it.display()
+        }.map { command ->
+            InlineKeyboardButton.CallbackData(
+                text = command.getCommandName()
+                    .replaceFirstChar { it.uppercase() }
+                    .replace("_", " "),
+                callbackData = command.getCommandName()
+                    .replace("/", "")
+            )
+        }
         return InlineKeyboardMarkup.create(buttons.chunked(3))
     }
 

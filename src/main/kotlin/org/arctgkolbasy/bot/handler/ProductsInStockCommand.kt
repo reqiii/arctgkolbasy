@@ -3,7 +3,7 @@ package org.arctgkolbasy.bot.handler
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.ParseMode
 import com.github.kotlintelegrambot.entities.Update
-import emoji.Emoji
+import org.arctgkolbasy.emoji.Emoji
 import org.arctgkolbasy.bot.extensions.escapeForMarkdownV2
 import org.arctgkolbasy.bot.handler.BillCommand.Companion.BILL
 import org.arctgkolbasy.bot.user.Session
@@ -14,7 +14,6 @@ import org.arctgkolbasy.product.Product
 import org.arctgkolbasy.product.ProductRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Controller
-import org.springframework.transaction.annotation.Transactional
 import java.math.RoundingMode
 
 @Controller
