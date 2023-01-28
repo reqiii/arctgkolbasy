@@ -119,7 +119,6 @@ class UseProductCommand(
         )
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
     private fun stepTwoEnterIsEnded(user: User, bot: Bot, update: Update): Session {
         val useProductSession: UseProductSessionStep1 = deserializeSession(user)
         val productId = useProductSession.id
@@ -131,6 +130,7 @@ class UseProductCommand(
         when (update.callbackQuery?.data) {
             CALLBACK_DATA_YES -> {
                 productService.markProductAsEaten(productId)
+                transactionService.recalculateTransactionsForProducts(listOf(productId))
                 bot.editMessageText(
                     chatId = update.chatId(),
                     messageId = update.callbackQuery?.message?.messageId,
