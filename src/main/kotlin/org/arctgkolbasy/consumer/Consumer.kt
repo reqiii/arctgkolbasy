@@ -4,6 +4,7 @@ import jakarta.persistence.Column
 import jakarta.persistence.Embeddable
 import jakarta.persistence.EmbeddedId
 import jakarta.persistence.Entity
+import jakarta.persistence.FetchType
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.MapsId
@@ -17,11 +18,11 @@ import java.io.Serializable
 class Consumer(
     @EmbeddedId
     val id: ConsumerId,
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "consumer_id", nullable = false)
     @MapsId("userId")
     val consumer: User,
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     @MapsId("productId")
     val product: Product,

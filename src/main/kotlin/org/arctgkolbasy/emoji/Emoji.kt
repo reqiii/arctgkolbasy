@@ -1,8 +1,8 @@
-package emoji
+package org.arctgkolbasy.emoji
 
-enum class Emoji (
+enum class Emoji(
     val emoji: String,
-        ) {
+) {
     FACE_EXHALING("\uD83D\uDE2E\u200D\uD83D\uDCA8"),
     BEAMING_FACE_WITH_SMILING_EYES("\uD83D\uDE01"),
     MONEY_WITH_WINGS("\uD83D\uDCB0"),
@@ -13,7 +13,7 @@ enum class Emoji (
     PERSON_SHRUGGING("\uD83E\uDD37"),
     FACE_WITH_MONOCLE("\uD83E\uDDD0"),
     MAGNIFYING_GLASS_TILTED_LEFT("\uD83D\uDD0D"),
-    GREEN_CIRCLE ("\uD83D\uDFE2"),
-    YELLOW_CIRCLE ("\uD83D\uDFE0"),
-    RED_CIRCLE ("\uD83D\uDD34"),
+    GREEN_CIRCLE("\uD83D\uDFE2"),
+    YELLOW_CIRCLE("\uD83D\uDFE0"),
+    RED_CIRCLE("\uD83D\uDD34"),
 }

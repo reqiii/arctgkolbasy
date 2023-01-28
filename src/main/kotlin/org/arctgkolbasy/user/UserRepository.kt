@@ -18,7 +18,7 @@ interface UserRepository : CrudRepository<User, Long> {
     fun findByUsername(username: String): User?
 
     @EntityGraph(value = "User.detail", type = EntityGraph.EntityGraphType.FETCH)
-    @Query("select u from User u join u.roles where u.id > :id order by u.id asc")
+    @Query("select u from User u left join u.roles where u.id > :id order by u.id asc")
     fun getPageFromCursor(@Param("id") id: Long, pageable: Pageable): List<User>
 
     @Modifying

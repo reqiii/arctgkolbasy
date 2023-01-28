@@ -3,11 +3,11 @@ package org.arctgkolbasy.bot.handler
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.TelegramFile
 import com.github.kotlintelegrambot.entities.Update
-import emoji.Emoji
 import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
 import org.arctgkolbasy.bot.user.emptySession
+import org.arctgkolbasy.emoji.Emoji
 import org.arctgkolbasy.product.ProductRepository
 import org.springframework.stereotype.Controller
 import kotlin.jvm.optionals.getOrNull

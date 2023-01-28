@@ -11,6 +11,7 @@ import com.github.kotlintelegrambot.entities.Update
 import org.arctgkolbasy.bot.handler.CurrentUserHandler
 import org.arctgkolbasy.bot.handler.HelpCommand.Companion.HELP_COMMAND
 import org.arctgkolbasy.bot.handler.chatIdUnsafe
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -20,6 +21,8 @@ class BotConfig(
     val currentUserHandler: CurrentUserHandler,
     val objectMapper: ObjectMapper,
 ) {
+
+    private val log = LoggerFactory.getLogger(this::class.java)!!
 
     @Value("\${telegram.bot.token}")
     lateinit var botToken: String
@@ -39,7 +42,7 @@ class BotConfig(
             object : Handler {
                 override fun checkUpdate(update: Update) = true
                 override fun handleUpdate(bot: Bot, update: Update) =
-                    println("received update '${objectMapper.writeValueAsString(update)}'")
+                    log.info("received update '${objectMapper.writeValueAsString(update)}'")
             }
         )
     }
