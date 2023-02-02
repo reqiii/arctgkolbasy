@@ -15,11 +15,13 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.util.concurrent.ExecutorService
 
 @Configuration
 class BotConfig(
     val currentUserHandler: CurrentUserHandler,
     val objectMapper: ObjectMapper,
+    val executorService: ExecutorService,
 ) {
 
     private val log = LoggerFactory.getLogger(this::class.java)!!
@@ -33,7 +35,16 @@ class BotConfig(
         dispatch {
             setUpCommands()
             logUpdate()
-            addHandler(currentUserHandler)
+            addHandler(
+                object : Handler {
+                    override fun checkUpdate(update: Update): Boolean = true
+                    override fun handleUpdate(bot: Bot, update: Update) {
+                        executorService.submit {
+                            currentUserHandler.handleUpdate(bot, update)
+                        }
+                    }
+                }
+            )
         }
     }
 
