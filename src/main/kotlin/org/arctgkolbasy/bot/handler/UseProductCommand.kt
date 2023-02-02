@@ -11,6 +11,7 @@ import org.arctgkolbasy.bot.user.Session
 import org.arctgkolbasy.bot.user.User
 import org.arctgkolbasy.bot.user.UserRoles
 import org.arctgkolbasy.bot.user.emptySession
+import org.arctgkolbasy.consumer.ConsumerRepository
 import org.arctgkolbasy.product.Product
 import org.arctgkolbasy.product.ProductRepository
 import org.arctgkolbasy.product.ProductService
@@ -22,6 +23,7 @@ import kotlin.jvm.optionals.getOrNull
 @Component
 class UseProductCommand(
     private val productRepository: ProductRepository,
+    private val consumerRepository: ConsumerRepository,
     private val productService: ProductService,
     private val transactionService: TransactionService,
     private val objectMapper: ObjectMapper,
@@ -31,6 +33,7 @@ class UseProductCommand(
     override fun checkUserAccess(user: User): Boolean = UserRoles.USER in user.roles
 
     override fun stepZero(user: User, bot: Bot, update: Update): Session {
+        val consumed = consumerRepository.findConsumedProductIdsByConsumerId(user.id)
         bot.sendMessage(
             chatId = update.chatIdUnsafe(),
             text = "Выбери продукт или напиши id",
@@ -39,7 +42,8 @@ class UseProductCommand(
                     cursor = -1,
                     currentAmount = 0,
                     pageable = Pageable.ofSize(100)
-                )
+                ),
+                consumed.mapTo(HashSet()) { it.id.productId },
             ),
         )
         return Session(UseCommandSteps.STEP_1_ENTER_ID.step)
@@ -180,14 +184,17 @@ class UseProductCommand(
         return emptySession
     }
 
-    private fun chooseProductKeyboard(product: Iterable<Product>) = InlineKeyboardMarkup.create(
+    private fun chooseProductKeyboard(product: Iterable<Product>, consumed: Set<Long>) = InlineKeyboardMarkup.create(
         product.map { p ->
             InlineKeyboardButton.CallbackData(
-                text = "${p.id} ${p.name}",
+                text = "${emojiIfConsumed(p, consumed)}${p.id} ${p.name}",
                 callbackData = p.id.toString(),
             )
         }.chunked(2)
     )
+
+    private fun emojiIfConsumed(p: Product, consumed: Set<Long>) =
+        if (p.id in consumed) "🍽 " else ""
 
     private fun enterAmountKeyboard(product: Product) = InlineKeyboardMarkup.create(
         (1..product.currentAmount)
