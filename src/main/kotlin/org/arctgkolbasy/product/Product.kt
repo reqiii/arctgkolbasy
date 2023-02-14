@@ -23,7 +23,7 @@ class Product(
     var currentAmount: Int,
     @Column(name = "product_image")
     val productImage: String,
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "buyer_id")
     val buyer: User,
     @OneToMany(fetch = FetchType.LAZY)
