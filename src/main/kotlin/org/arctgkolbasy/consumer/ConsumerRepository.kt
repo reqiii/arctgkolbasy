@@ -9,4 +9,9 @@ interface ConsumerRepository: CrudRepository<Consumer, ConsumerId> {
     fun findAllByProductIds(
         @Param("productIds") productIds: List<Long>,
     ): List<Consumer>
+
+    @Query("select c from Consumer c JOIN FETCH c.consumer where c.product.id in :productIds order by c.consumedAmount")
+    fun findAllByProductIdsAndUserWithOrderBy(
+        @Param("productIds") productIds: Long,
+    ): List<Consumer>
 }

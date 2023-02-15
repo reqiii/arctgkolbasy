@@ -28,4 +28,5 @@ interface UserRepository : CrudRepository<User, Long> {
         @Param("sessionKey") sessionKey: String?,
         @Param("session") session: String?,
     )
+
 }
